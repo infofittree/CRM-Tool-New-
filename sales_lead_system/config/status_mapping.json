@@ -1,0 +1,67 @@
+{
+  "allowed_statuses": [
+    "Prospect",
+    "Requirement Qualified",
+    "Technical Discussion",
+    "Quotation Sent",
+    "Sample Sent",
+    "Negotiation",
+    "Trial Order",
+    "Order Closed",
+    "Nurturing",
+    "Lost"
+  ],
+  "aliases": {
+    "Prospect": [
+      "prospect", "new", "new lead", "active", "outreach", "out reach",
+      "contacted", "assigned", "fresh", "open"
+    ],
+    "Requirement Qualified": [
+      "requirement qualified", "requirement understanding", "interested",
+      "qualified", "req qualified", "rq"
+    ],
+    "Technical Discussion": [
+      "technical discussion", "tech discussion", "technical", "meeting scheduled",
+      "meeting", "discussion"
+    ],
+    "Quotation Sent": [
+      "quotation sent", "quotation", "quote sent", "quoted", "offer sent",
+      "quotation sent"
+    ],
+    "Sample Sent": [
+      "sample sent", "samples sent", "sample", "samples", "sample dispatched"
+    ],
+    "Negotiation": [
+      "negotiation", "negotiating", "negotation", "negoatiation",
+      "price negotiation", "commercial discussion"
+    ],
+    "Trial Order": [
+      "trial order", "trial", "first order", "test order", "pilot order"
+    ],
+    "Order Closed": [
+      "order closed", "converted", "won", "closed won", "customer",
+      "order received", "order confirmed", "deal done"
+    ],
+    "Nurturing": [
+      "nurturing", "nurture", "follow up stage", "follow up", "follow-up",
+      "inactive", "dormant", "not now", "contact later", "long term",
+      "no response", "no answer"
+    ],
+    "Lost": [
+      "lost", "not interested", "dead", "closed lost", "rejected",
+      "dropped", "disqualified"
+    ]
+  },
+  "lost_reasons": [
+    "Price Too High",
+    "Existing Supplier",
+    "Product Not Available",
+    "Price Issues",
+    "Certification Concern",
+    "Imported Locally",
+    "Quality Concern"
+  ],
+  "lead_categories": ["A", "B", "C"],
+  "engagement_frequency": ["Frequent", "Medium", "Low"],
+  "duplicate_similarity_threshold": 88
+}

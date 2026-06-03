@@ -1,0 +1,421 @@
+"""CRM service layer used by Streamlit pages and future APIs."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+from typing import Any
+
+import pandas as pd
+from rapidfuzz import fuzz
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.security import hash_password
+from database.crud import ActivityLogCRUD, FollowUpCRUD, LeadCRUD
+from database.models import ALLOWED_STATUSES, EngagementEvent, Lead, LeadSequence, PRIORITY_LEVELS, User
+from modules import dashboard_queries
+from modules.dropdown_config import option_list
+from modules.validation_engine import EMAIL_PATTERN, ValidationEngine
+
+
+LEAD_SOURCES = option_list("lead_sources")
+CONTINENTS = option_list("continents")
+MODES = option_list("modes")
+FOLLOWUP_STAGES = option_list("followup_stages")
+QUOTATION_STATUSES = option_list("quotation_statuses")
+BUYER_TAGS = option_list("buyer_tags")
+PROBABILITIES = option_list("probabilities")
+COUNTRIES = [
+    "INDIA",
+    "UNITED STATES",
+    "UNITED KINGDOM",
+    "UNITED ARAB EMIRATES",
+    "KENYA",
+    "SAUDI ARABIA",
+    "SOUTH AFRICA",
+    "GERMANY",
+    "FRANCE",
+    "CANADA",
+    "AUSTRALIA",
+    "OTHER",
+]
+
+
+@dataclass
+class SaveResult:
+    """Result returned after data-entry save attempts."""
+
+    ok: bool
+    message: str
+    lead_id: str | None = None
+    duplicates: list[dict[str, Any]] | None = None
+
+
+class CRMService:
+    """Shared CRM operations for dashboard, forms, analytics, and exports."""
+
+    def __init__(self, session: Session, logger=None) -> None:
+        self.session = session
+        self.logger = logger
+        self.leads = LeadCRUD()
+        self.followups = FollowUpCRUD()
+        self.activity = ActivityLogCRUD()
+        self.validator = ValidationEngine()
+
+    def generate_lead_id(self, year: int | None = None) -> str:
+        """Generate a MySQL-backed lead ID."""
+        year = year or date.today().year
+        sequence = self.session.get(LeadSequence, year)
+        if sequence is None:
+            sequence = LeadSequence(year=year, last_number=0)
+            self.session.add(sequence)
+            self.session.flush()
+        sequence.last_number += 1
+        return f"FT-{year}-{sequence.last_number:04d}"
+
+    def get_salespersons(self) -> list[str]:
+        """Return active salesperson names from users and existing assignments."""
+        user_names = self.session.scalars(
+            select(User.full_name).where(User.role.in_(["Salesperson", "Manager", "Admin"]), User.is_active.is_(True))
+        ).all()
+        assigned = self.session.scalars(select(Lead.assigned_to).where(Lead.assigned_to.is_not(None)).distinct()).all()
+        values = sorted({name for name in [*user_names, *assigned] if name})
+        return values or ["Unassigned"]
+
+    def dashboard_metrics(self, user: dict) -> dict[str, Any]:
+        """Compute dashboard KPIs scoped by role."""
+        total = dashboard_queries.get_total_leads(self.session, user)
+        active = dashboard_queries.get_active_leads(self.session, user)
+        nurturing = dashboard_queries.get_nurturing_leads(self.session, user)
+        converted = dashboard_queries.get_converted_leads(self.session, user)
+        due_today = dashboard_queries.get_due_today_followups(self.session, user)
+        overdue = dashboard_queries.get_overdue_followups(self.session, user)
+        return {
+            "total": total,
+            "active": active,
+            "nurturing": nurturing,
+            "due_today": due_today,
+            "overdue": overdue,
+            "converted": converted,
+            "conversion_rate": dashboard_queries.get_conversion_rate(self.session, user),
+        }
+
+    def leads_dataframe(self, user: dict, limit: int = 500) -> pd.DataFrame:
+        """Return scoped leads as a dataframe."""
+        return dashboard_queries.get_leads_dataframe(self.session, user, limit=limit)
+
+    def followups_dataframe(self, user: dict, horizon_days: int = 30) -> pd.DataFrame:
+        """Return follow-ups joined to lead context."""
+        return dashboard_queries.get_followups_dataframe(self.session, user, horizon_days=horizon_days)
+
+    def save_lead_from_entry(self, payload: dict[str, Any], user: dict, force: bool = False) -> SaveResult:
+        """Validate, de-duplicate, insert lead, create first follow-up, and audit."""
+        cleaned = self._clean_entry_payload(payload)
+        validation_errors = self._validate_entry(cleaned)
+        if validation_errors:
+            return SaveResult(False, "; ".join(validation_errors))
+
+        duplicates = self.find_duplicates(cleaned)
+        if duplicates and not force:
+            return SaveResult(False, "Possible duplicate detected.", duplicates=duplicates)
+
+        cleaned["lead_id"] = cleaned.get("lead_id") or self.generate_lead_id()
+        cleaned["created_date"] = cleaned.get("created_date") or date.today()
+        cleaned["lead_score"] = cleaned.get("lead_score") or self._initial_lead_score(cleaned)
+        lead = self.leads.create_lead(self.session, cleaned)
+
+        if cleaned.get("last_discussion") or cleaned.get("next_action") or cleaned.get("next_follow_up"):
+            self.followups.add_followup(
+                self.session,
+                {
+                    "lead_id": lead.lead_id,
+                    "followup_date": date.today(),
+                    "discussion": cleaned.get("last_discussion"),
+                    "next_action": cleaned.get("next_action"),
+                    "next_followup": cleaned.get("next_follow_up"),
+                    "updated_by": user["full_name"],
+                },
+            )
+        self.activity.log_activity(self.session, "CREATE_LEAD_FROM_DATA_ENTRY", user["full_name"], lead.lead_id)
+        return SaveResult(True, "Lead saved successfully.", lead_id=lead.lead_id)
+
+    def add_quick_followup(self, lead_id: str, payload: dict[str, Any], user: dict) -> None:
+        """Add follow-up, update lead state, and audit."""
+        self.followups.add_followup(
+            self.session,
+            {
+                "lead_id": lead_id,
+                "followup_date": date.today(),
+                "discussion": payload.get("discussion"),
+                "next_action": payload.get("next_action"),
+                "next_followup": payload.get("next_followup"),
+                "updated_by": user["full_name"],
+            },
+        )
+        lead = self.session.get(Lead, lead_id)
+        if lead:
+            lead.last_contact_date = date.today()
+            if payload.get("next_action"):
+                lead.next_action_plan = payload["next_action"]
+            new_status = payload.get("status")
+            if new_status and new_status != lead.status:
+                # Record status movement for weekly review / history (Section 12)
+                self.session.add(
+                    EngagementEvent(
+                        lead_id=lead_id, user_name=user["full_name"], event_type="status_change",
+                        notes=f"{lead.status} -> {new_status}",
+                    )
+                )
+                lead.status = new_status
+                # Lost reason capture (mandatory at UI layer)
+                if new_status == "Lost" and payload.get("lost_reason"):
+                    lead.lost_reason = payload["lost_reason"]
+            # Recompute score live after status change
+            try:
+                from modules.lead_scoring import score_lead
+                lead.lead_score = score_lead({c.name: getattr(lead, c.name) for c in Lead.__table__.columns})[0]
+            except Exception:
+                pass
+        # Record an engagement event so call/WhatsApp/email history accrues
+        mode = str(payload.get("mode") or "").strip().lower()
+        channel_map = {"calling": "call", "call": "call", "whatsapp": "whatsapp", "email": "email", "meeting": "meeting"}
+        self.session.add(
+            EngagementEvent(
+                lead_id=lead_id,
+                user_name=user["full_name"],
+                event_type=channel_map.get(mode, "followup"),
+                channel=mode or None,
+                direction="outbound",
+                notes=payload.get("discussion") or payload.get("next_action"),
+            )
+        )
+        self.activity.log_activity(self.session, "ADD_QUICK_FOLLOWUP", user["full_name"], lead_id)
+
+    def get_tasks(self, user: dict, upcoming_days: int = 7, max_today: int = 30) -> dict:
+        """Return the live derived task queue for a user (today/overdue/upcoming)."""
+        from modules import task_engine
+        return task_engine.generate_tasks(self.session, user, upcoming_days=upcoming_days, max_today=max_today)
+
+    def update_lead_full(self, lead_id: str, payload: dict[str, Any], user: dict) -> None:
+        """Full lead update from Lead Detail — category + buyer level + follow-up,
+        with category-change tracking in the activity timeline."""
+        lead = self.session.get(Lead, lead_id)
+        if lead:
+            # Lead Category change tracking (Patch 1)
+            new_cat = payload.get("lead_category")
+            if new_cat and new_cat not in ("— select —",) and new_cat != (lead.lead_category or ""):
+                old_cat = lead.lead_category or "—"
+                self.session.add(EngagementEvent(
+                    lead_id=lead_id, user_name=user["full_name"], event_type="category_change",
+                    notes=f"Lead Category changed from {old_cat} → {new_cat}",
+                ))
+                self.activity.log_activity(
+                    self.session, "CATEGORY_CHANGE", user["full_name"], lead_id,
+                    remarks=f"{old_cat} → {new_cat}",
+                )
+                lead.lead_category = new_cat
+            # Alibaba buyer level
+            if "buyer_tag" in payload:
+                lead.buyer_tag = payload.get("buyer_tag")
+            if payload.get("lost_reason"):
+                lead.lost_reason = payload["lost_reason"]
+        # Reuse the quick-followup pipeline for status/followup/notes/score
+        self.add_quick_followup(lead_id, payload, user)
+
+    def reschedule_followup(self, lead_id: str, new_date, user: dict, note: str | None = None) -> None:
+        """Reschedule a lead's next follow-up to a new date and log it."""
+        self.followups.add_followup(
+            self.session,
+            {
+                "lead_id": lead_id,
+                "followup_date": date.today(),
+                "discussion": note or "Rescheduled",
+                "next_action": "Follow up",
+                "next_followup": new_date,
+                "updated_by": user["full_name"],
+            },
+        )
+        self.session.add(
+            EngagementEvent(lead_id=lead_id, user_name=user["full_name"], event_type="reschedule", notes=note)
+        )
+        self.activity.log_activity(self.session, "RESCHEDULE_FOLLOWUP", user["full_name"], lead_id)
+
+    def append_note(self, lead_id: str, note: str, user: dict) -> None:
+        """Append a timestamped note to a lead and log an engagement event."""
+        lead = self.session.get(Lead, lead_id)
+        if lead:
+            stamp = date.today().isoformat()
+            existing = (lead.remarks or "").strip()
+            lead.remarks = f"{existing}\n[{stamp} {user['full_name']}] {note}".strip()
+        self.session.add(
+            EngagementEvent(lead_id=lead_id, user_name=user["full_name"], event_type="note", notes=note)
+        )
+        self.activity.log_activity(self.session, "ADD_NOTE", user["full_name"], lead_id)
+
+    def bulk_import_dataframe(self, df: pd.DataFrame, user: dict) -> dict[str, int]:
+        """Import valid rows from uploaded Excel/CSV data."""
+        summary = {"inserted": 0, "duplicates_skipped": 0, "invalid_rows": 0, "failed_rows": 0}
+        for _, row in df.fillna("").iterrows():
+            payload = {str(key).strip().lower().replace(" ", "_"): value for key, value in row.to_dict().items()}
+            result = self.save_lead_from_entry(payload, user, force=False)
+            if result.ok:
+                summary["inserted"] += 1
+            elif result.duplicates:
+                summary["duplicates_skipped"] += 1
+            elif "required" in result.message or "invalid" in result.message.lower():
+                summary["invalid_rows"] += 1
+            else:
+                summary["failed_rows"] += 1
+        return summary
+
+    def find_duplicates(self, payload: dict[str, Any], threshold: int = 88) -> list[dict[str, Any]]:
+        """Find likely existing duplicates by email, phone, and fuzzy company name."""
+        company = str(payload.get("company_name") or "")
+        email = str(payload.get("email") or "").lower()
+        phone = str(payload.get("phone") or "")
+        stmt = select(Lead).where(Lead.deleted_at.is_(None))
+        duplicates = []
+        for lead in self.session.scalars(stmt):
+            reasons = []
+            score = fuzz.token_set_ratio(company, lead.company_name or "") if company and lead.company_name else 0
+            if score >= threshold:
+                reasons.append(f"company similarity {score}")
+            if email and lead.email and email == lead.email.lower():
+                reasons.append("same email")
+                score = max(score, 100)
+            if phone and lead.phone and phone == lead.phone:
+                reasons.append("same phone")
+                score = max(score, 100)
+            if reasons:
+                duplicates.append({"lead_id": lead.lead_id, "company_name": lead.company_name, "similarity": score, "reasons": ", ".join(reasons)})
+        return sorted(duplicates, key=lambda item: item["similarity"], reverse=True)[:5]
+
+    def create_user(self, username: str, password: str, full_name: str, role: str) -> None:
+        """Create a CRM user."""
+        self.session.add(User(username=username, password_hash=hash_password(password), full_name=full_name, role=role, is_active=True))
+
+    _MAX_FOLLOWUP_DAYS = 30
+    _CANONICAL_STATUSES = {
+        "Prospect", "Requirement Qualified", "Technical Discussion",
+        "Quotation Sent", "Sample Sent", "Negotiation", "Trial Order",
+        "Order Closed", "Nurturing", "Lost",
+    }
+    _LOST_REASONS = {
+        "Price Too High", "Existing Supplier", "Product Not Available",
+        "Price Issues", "Certification Concern", "Imported Locally", "Quality Concern",
+    }
+
+    def _validate_entry(self, payload: dict[str, Any]) -> list[str]:
+        from datetime import timedelta
+        errors = []
+        # Required core fields
+        for field in ("company_name", "status", "assigned_to"):
+            if not payload.get(field):
+                errors.append(f"{field} is required")
+        # Status must be canonical
+        status = payload.get("status", "")
+        if status and status not in self._CANONICAL_STATUSES:
+            errors.append(f"Invalid status '{status}'. Must be one of: {', '.join(sorted(self._CANONICAL_STATUSES))}")
+        # Follow-up date — MANDATORY and max 30 days
+        fu_date = payload.get("next_follow_up") or payload.get("follow_up_date")
+        if not fu_date:
+            errors.append("Follow-up date is mandatory — no lead can be saved without one.")
+        else:
+            try:
+                if isinstance(fu_date, str):
+                    fu_date = date.fromisoformat(str(fu_date)[:10])
+                if hasattr(fu_date, 'date'):  # datetime → date
+                    fu_date = fu_date.date()
+                days_ahead = (fu_date - date.today()).days
+                if days_ahead > self._MAX_FOLLOWUP_DAYS:
+                    errors.append(f"Follow-up date cannot exceed {self._MAX_FOLLOWUP_DAYS} days from today. Set a closer date.")
+                elif days_ahead < -180:
+                    errors.append("Follow-up date appears too far in the past. Please enter today or a future date.")
+            except (ValueError, TypeError, AttributeError):
+                errors.append("Follow-up date format is invalid.")
+        # Next Action Plan — MANDATORY
+        if not str(payload.get("next_action_plan") or "").strip():
+            errors.append("Next Action Plan is mandatory — explain what will be done on the follow-up.")
+        # Lead Category — MANDATORY (A/B/C, manual decision, no auto-default)
+        cat = str(payload.get("lead_category") or "").strip().upper()
+        if not cat:
+            errors.append("Lead Category (A/B/C) is mandatory.")
+        elif cat not in {"A", "B", "C"}:
+            errors.append("Lead Category must be A, B, or C.")
+        # Lead Source — MANDATORY (dropdown only)
+        if not str(payload.get("lead_source") or "").strip():
+            errors.append("Lead Source is mandatory.")
+        # Lost reason mandatory when status is Lost
+        if status == "Lost" and not payload.get("lost_reason"):
+            errors.append("Lost Reason is mandatory when marking a lead as Lost.")
+        if payload.get("lost_reason") and payload["lost_reason"] not in self._LOST_REASONS:
+            errors.append(f"Lost reason must be one of: {', '.join(self._LOST_REASONS)}")
+        # Email format
+        if payload.get("email") and not EMAIL_PATTERN.match(payload["email"]):
+            errors.append("Invalid email format.")
+        # Phone
+        if payload.get("phone") and len("".join(ch for ch in payload["phone"] if ch.isdigit())) < 7:
+            errors.append("Invalid phone format (min 7 digits).")
+        return errors
+
+    def _clean_entry_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        from modules.status_taxonomy import to_canonical
+        from modules.geo import normalize_country, country_continent, normalize_source
+        phone = self._clean_phone(payload.get("phone"))
+        alternate = self._clean_phone(payload.get("alternate_number"))
+        whatsapp = self._clean_phone(payload.get("whatsapp_number"))
+        company = str(payload.get("company_name") or "").strip().upper()
+        clean_country = normalize_country(payload.get("country"))
+        cleaned = {key: (value.strip() if isinstance(value, str) else value) for key, value in payload.items()}
+        # Category: NO auto-default — must be set by the salesperson (mandatory)
+        raw_cat = str(payload.get("lead_category") or "").strip().upper()
+        cleaned.update(
+            {
+                "company_name": company,
+                "phone": phone,
+                "alternate_number": alternate,
+                "whatsapp_number": whatsapp,
+                "email": str(payload.get("email") or "").strip().lower() or None,
+                "country": clean_country,
+                "continent": country_continent(clean_country),  # auto-mapped
+                "lead_source": normalize_source(payload.get("lead_source")) if payload.get("lead_source") else None,
+                "status": to_canonical(payload.get("status") or "Prospect"),
+                "priority_level": payload.get("priority_level") or "MEDIUM",
+                "next_follow_up": payload.get("next_follow_up"),
+                "lead_category": raw_cat or None,
+                "buyer_engagement_frequency": payload.get("buyer_engagement_frequency") or "Medium",
+                "next_action_plan": str(payload.get("next_action_plan") or "").strip() or None,
+                "lost_reason": payload.get("lost_reason") if payload.get("status") == "Lost" else None,
+            }
+        )
+        return cleaned
+
+    @staticmethod
+    def _initial_lead_score(payload: dict[str, Any]) -> float:
+        from modules.lead_scoring import score_lead
+        score, _, _ = score_lead(payload)
+        return score
+
+    def _lead_scope(self, user: dict):
+        return dashboard_queries.lead_scope(user)
+
+    @staticmethod
+    def _lead_dict(lead: Lead) -> dict[str, Any]:
+        return {column.name: getattr(lead, column.name) for column in Lead.__table__.columns}
+
+    @staticmethod
+    def _clean_phone(value: Any) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        if text.endswith(".0") and text.replace(".0", "").isdigit():
+            text = text[:-2]
+        cleaned = "".join(ch for ch in text if ch.isdigit() or ch == "+")
+        if cleaned.count("+") > 1:
+            cleaned = "+" + cleaned.replace("+", "")
+        if "+" in cleaned and not cleaned.startswith("+"):
+            cleaned = cleaned.replace("+", "")
+        return cleaned or None

@@ -1,0 +1,9 @@
+pandas>=2.2.0
+numpy>=1.26.0
+openpyxl>=3.1.0
+rapidfuzz>=3.9.0
+SQLAlchemy>=2.0.30
+mysql-connector-python>=8.4.0
+python-dotenv>=1.0.1
+streamlit>=1.36.0
+plotly>=5.22.0

@@ -1,0 +1,43 @@
+# ─── Secrets (NEVER COMMIT) ───────────────────────────────
+.env
+*.env
+**/config/.env
+.streamlit/secrets.toml
+
+# ─── Python ───────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ─── Virtual environments (large, machine-specific) ───────
+.venv/
+.venv_codex/
+**/.venv/
+**/.venv_codex/
+venv/
+env/
+
+# ─── Databases (local SQLite, may contain customer PII) ───
+*.db
+*.db.bak
+*.bak
+*.sqlite
+*.sqlite3
+
+# ─── Runtime data (lead PII, backups, processed exports) ──
+sales_lead_system/data/
+sales_lead_system/logs/
+sales_lead_system/exports/
+sales_lead_system/outputs/
+outputs/
+
+# ─── Editor / OS ──────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ─── Claude / agent local state ───────────────────────────
+.claude/

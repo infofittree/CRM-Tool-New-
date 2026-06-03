@@ -1,0 +1,28 @@
+{
+  "required_lead_fields": ["lead_id", "company_name", "status"],
+  "allowed_statuses": [
+    "Prospect",
+    "Requirement Qualified",
+    "Technical Discussion",
+    "Quotation Sent",
+    "Sample Sent",
+    "Negotiation",
+    "Trial Order",
+    "Order Closed",
+    "Nurturing",
+    "Lost"
+  ],
+  "lead_categories": ["A", "B", "C"],
+  "engagement_frequency_values": ["Frequent", "Medium", "Low"],
+  "lost_reasons": [
+    "Price Too High",
+    "Existing Supplier",
+    "Product Not Available",
+    "Price Issues",
+    "Certification Concern",
+    "Imported Locally",
+    "Quality Concern"
+  ],
+  "max_followup_days_ahead": 30,
+  "duplicate_similarity_threshold": 88
+}

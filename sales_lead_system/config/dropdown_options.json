@@ -1,0 +1,131 @@
+{
+  "lead_statuses": [
+    "Prospect",
+    "Requirement Qualified",
+    "Technical Discussion",
+    "Quotation Sent",
+    "Sample Sent",
+    "Negotiation",
+    "Trial Order",
+    "Order Closed",
+    "Nurturing",
+    "Lost"
+  ],
+  "lost_reasons": [
+    "Price Too High",
+    "Existing Supplier",
+    "Product Not Available",
+    "Price Issues",
+    "Certification Concern",
+    "Imported Locally",
+    "Quality Concern"
+  ],
+  "lead_categories": [
+    "A",
+    "B",
+    "C"
+  ],
+  "engagement_frequency": [
+    "Frequent",
+    "Medium",
+    "Low"
+  ],
+  "followup_statuses": [
+    "Open",
+    "Done",
+    "Delayed"
+  ],
+  "lead_sources": [
+    "Go4",
+    "Alibaba",
+    "Trademo",
+    "Dataverse",
+    "AI",
+    "LinkedIn",
+    "Spice Exchange",
+    "Other"
+  ],
+  "salespersons": [
+    "Yash",
+    "Maruti",
+    "Poonam",
+    "Vaidehi",
+    "Rahul"
+  ],
+  "transfer_to": [
+    "Yash",
+    "Maruti"
+  ],
+  "continents": [
+    "Asia",
+    "Africa",
+    "Europe",
+    "North America",
+    "South America",
+    "Oceania",
+    "Antarctica"
+  ],
+  "modes": [
+    "Whatsapp",
+    "Email",
+    "Calling",
+    "Other"
+  ],
+  "followup_modes": [
+    "Call",
+    "Email",
+    "WhatsApp",
+    "Meeting"
+  ],
+  "buyer_tags": [
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+  ],
+  "probabilities": [
+    "25%",
+    "50%",
+    "75%",
+    "90%"
+  ],
+  "quotation_statuses": [
+    "Sent",
+    "Hold",
+    "Pending"
+  ],
+  "payment_statuses": [
+    "Pending",
+    "Advance Received",
+    "Completed"
+  ],
+  "order_statuses": [
+    "Enquiry",
+    "Quotation Sent",
+    "Negotiation",
+    "Confirmed",
+    "In Production",
+    "Dispatched",
+    "Completed"
+  ],
+  "followup_stages": [
+    "Follow Up 1",
+    "Follow Up 2",
+    "Follow Up 3",
+    "Follow Up 4",
+    "Follow Up 5",
+    "Follow up 6",
+    "Follow up 7"
+  ],
+  "legacy_statuses": [
+    "NEW",
+    "PROSPECT",
+    "NURTURING",
+    "NEGOTIATION",
+    "QUOTATION SENT",
+    "SAMPLE SENT",
+    "CONVERTED",
+    "LOST",
+    "INACTIVE"
+  ]
+}

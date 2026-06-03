@@ -1,0 +1,2 @@
+"""Streamlit CRM application package."""
+
