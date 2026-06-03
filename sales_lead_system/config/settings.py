@@ -53,20 +53,46 @@ class MySQLSettings:
         return f"{self.user}@{self.host}:{self.port}/{self.database}"
 
 
+def _read_streamlit_secrets() -> dict:
+    """Return the [mysql] section from Streamlit secrets, or {} if unavailable.
+
+    On Streamlit Cloud, DB credentials live in the app's Secrets (secrets.toml)
+    under a [mysql] table. Locally (CLI / no secrets file) this safely returns {}
+    and the loader falls back to environment variables / .env.
+    """
+    try:
+        import streamlit as st  # available in the app runtime
+        if "mysql" in st.secrets:
+            return dict(st.secrets["mysql"])
+    except Exception:
+        pass
+    return {}
+
+
 def get_mysql_settings() -> MySQLSettings:
-    """Load MySQL settings from environment variables."""
+    """Load MySQL settings — Streamlit secrets first, then environment/.env."""
     import os
 
+    sec = _read_streamlit_secrets()
+
+    def val(key: str, default: str) -> str:
+        # priority: Streamlit secrets [mysql] -> env var -> default
+        # secrets use short keys (host, port, ...) i.e. MYSQL_ prefix stripped
+        short = key.removeprefix("MYSQL_").lower()
+        if short in sec and sec[short] not in (None, ""):
+            return str(sec[short])
+        return os.getenv(key, default)
+
     return MySQLSettings(
-        host=os.getenv("MYSQL_HOST", "localhost"),
-        port=int(os.getenv("MYSQL_PORT", "3306")),
-        user=os.getenv("MYSQL_USER", "root"),
-        password=os.getenv("MYSQL_PASSWORD", ""),
-        database=os.getenv("MYSQL_DATABASE", "sales_lead_crm"),
-        pool_size=int(os.getenv("MYSQL_POOL_SIZE", "10")),
-        max_overflow=int(os.getenv("MYSQL_MAX_OVERFLOW", "20")),
-        pool_recycle_seconds=int(os.getenv("MYSQL_POOL_RECYCLE_SECONDS", "1800")),
-        pool_timeout_seconds=int(os.getenv("MYSQL_POOL_TIMEOUT_SECONDS", "30")),
+        host=val("MYSQL_HOST", "localhost"),
+        port=int(val("MYSQL_PORT", "3306")),
+        user=val("MYSQL_USER", "root"),
+        password=val("MYSQL_PASSWORD", ""),
+        database=val("MYSQL_DATABASE", "sales_lead_crm"),
+        pool_size=int(val("MYSQL_POOL_SIZE", "10")),
+        max_overflow=int(val("MYSQL_MAX_OVERFLOW", "20")),
+        pool_recycle_seconds=int(val("MYSQL_POOL_RECYCLE_SECONDS", "1800")),
+        pool_timeout_seconds=int(val("MYSQL_POOL_TIMEOUT_SECONDS", "30")),
     )
 
 
