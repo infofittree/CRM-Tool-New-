@@ -26,6 +26,15 @@ class MySQLSettings:
     max_overflow: int = 20
     pool_recycle_seconds: int = 1800
     pool_timeout_seconds: int = 30
+    ssl: bool = False  # most hosted MySQL (Aiven, Railway, etc.) require SSL
+
+    @property
+    def _query(self) -> str:
+        q = "charset=utf8mb4"
+        if self.ssl:
+            # mysql-connector enables TLS without a local CA when ssl_disabled=false
+            q += "&ssl_disabled=false"
+        return q
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -36,7 +45,7 @@ class MySQLSettings:
         database = quote_plus(self.database)
         return (
             f"mysql+mysqlconnector://{user}:{password}"
-            f"@{host}:{self.port}/{database}?charset=utf8mb4"
+            f"@{host}:{self.port}/{database}?{self._query}"
         )
 
     @property
@@ -45,7 +54,7 @@ class MySQLSettings:
         user = quote_plus(self.user)
         password = quote_plus(self.password)
         host = quote_plus(self.host)
-        return f"mysql+mysqlconnector://{user}:{password}@{host}:{self.port}/?charset=utf8mb4"
+        return f"mysql+mysqlconnector://{user}:{password}@{host}:{self.port}/?{self._query}"
 
     @property
     def redacted_dsn(self) -> str:
@@ -93,6 +102,7 @@ def get_mysql_settings() -> MySQLSettings:
         max_overflow=int(val("MYSQL_MAX_OVERFLOW", "20")),
         pool_recycle_seconds=int(val("MYSQL_POOL_RECYCLE_SECONDS", "1800")),
         pool_timeout_seconds=int(val("MYSQL_POOL_TIMEOUT_SECONDS", "30")),
+        ssl=str(val("MYSQL_SSL", "false")).strip().lower() in ("1", "true", "yes", "on"),
     )
 
 
