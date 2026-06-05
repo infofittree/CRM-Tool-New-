@@ -86,11 +86,15 @@ def get_mysql_settings() -> MySQLSettings:
 
     def val(key: str, default: str) -> str:
         # priority: Streamlit secrets [mysql] -> env var -> default
-        # secrets use short keys (host, port, ...) i.e. MYSQL_ prefix stripped
+        # secrets use short keys (host, port, ...) i.e. MYSQL_ prefix stripped.
+        # .strip() guards against trailing spaces/newlines pasted into secrets.
         short = key.removeprefix("MYSQL_").lower()
         if short in sec and sec[short] not in (None, ""):
-            return str(sec[short])
-        return os.getenv(key, default)
+            return str(sec[short]).strip()
+        env_val = os.getenv(key)
+        if env_val is not None and env_val != "":
+            return env_val.strip()
+        return default
 
     return MySQLSettings(
         host=val("MYSQL_HOST", "localhost"),
