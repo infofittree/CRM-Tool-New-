@@ -75,17 +75,42 @@ def _copy_table(src: Engine, dst: Engine, table: str, dry_run: bool) -> int:
     return len(rows)
 
 
+def _build_target_url(args) -> str:
+    """Build a safe SQLAlchemy URL from --target, or from separate parts."""
+    if args.target:
+        return args.target
+    from urllib.parse import quote_plus
+    import os
+    pw = args.password or os.getenv("CLOUD_DB_PASSWORD", "")
+    user = quote_plus(args.user)
+    pw = quote_plus(pw)
+    host = quote_plus(args.host)
+    db = quote_plus(args.database)
+    ssl = "&ssl_disabled=false" if args.ssl else ""
+    return f"mysql+mysqlconnector://{user}:{pw}@{host}:{args.port}/{db}?charset=utf8mb4{ssl}"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Migrate local MySQL data to a cloud MySQL.")
-    ap.add_argument("--target", required=True, help="SQLAlchemy URL of the CLOUD MySQL")
+    ap.add_argument("--target", help="Full SQLAlchemy URL of the CLOUD MySQL (alternative to parts below)")
+    ap.add_argument("--host", help="Cloud MySQL host")
+    ap.add_argument("--port", type=int, default=3306, help="Cloud MySQL port")
+    ap.add_argument("--user", help="Cloud MySQL user")
+    ap.add_argument("--password", help="Cloud MySQL password (or set CLOUD_DB_PASSWORD env var)")
+    ap.add_argument("--database", help="Cloud MySQL database name")
+    ap.add_argument("--ssl", action="store_true", help="Use TLS (required by most hosts like Aiven)")
     ap.add_argument("--dry-run", action="store_true", help="Preview counts only, no writes")
     args = ap.parse_args()
 
+    if not args.target and not (args.host and args.user and args.database):
+        ap.error("Provide either --target URL, or --host --user --database (+ --password).")
+
+    target_url = _build_target_url(args)
     src = create_engine(get_mysql_settings().sqlalchemy_url, pool_pre_ping=True)
-    dst = create_engine(args.target, pool_pre_ping=True)
+    dst = create_engine(target_url, pool_pre_ping=True)
 
     print("Source (local):", get_mysql_settings().redacted_dsn)
-    print("Target (cloud):", args.target.split("@")[-1])
+    print("Target (cloud):", target_url.split("@")[-1])
     print()
 
     if not args.dry_run:
