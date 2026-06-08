@@ -44,74 +44,100 @@ class StartupStatus:
     errors: list[str] = field(default_factory=list)
 
 
+# Bump this when schema/migrations change to force a one-time re-bootstrap.
+BOOTSTRAP_VERSION = "2026-06-05"
+# Process-level memo so additional sessions in the SAME app process skip even the flag read.
+_PROCESS_BOOTSTRAPPED = False
+
+
+def _get_setting(db: DatabaseConnection, key: str) -> str | None:
+    with db.session_scope() as session:
+        row = session.get(AppSetting, key)
+        return row.setting_value if row else None
+
+
+def _put_setting(db: DatabaseConnection, key: str, value: str) -> None:
+    with db.session_scope() as session:
+        row = session.get(AppSetting, key)
+        if row is None:
+            session.add(AppSetting(setting_key=key, setting_value=value))
+        else:
+            row.setting_value = value
+
+
+def _run_full_bootstrap(db: DatabaseConnection, status: StartupStatus, logger, force_sync: bool) -> None:
+    """Heavy, run-once work: schema migrations, data cleanup, scores, excel sync."""
+    db.ensure_database_exists()
+    Base.metadata.create_all(db.engine)
+    ensure_phase2_schema(db.engine)
+    ensure_phase3_schema(db.engine)
+    ensure_phase4_schema(db.engine)
+    ensure_phase5_data_cleanup(db.engine)
+    ensure_assignment_integrity(db.engine)
+    ensure_column_defaults(db.engine)
+    _ensure_default_admin(db)
+
+    lead_count = _lead_count(db)
+    source_file, source_kind = _find_sync_source()
+    dropdown_source = _find_dropdown_source(source_file)
+    if dropdown_source:
+        sync_dropdowns_from_workbook(dropdown_source)
+    should_sync = force_sync or lead_count == 0 or _source_changed(db, source_file)
+    if should_sync and source_file:
+        cleaned_file = _prepare_cleaned_file(source_file, source_kind)
+        MySQLSyncEngine(db, logger).import_cleaned_excel(cleaned_file, user_name="startup")
+        _update_sequence_from_import(db)
+        _set_sync_setting(db, source_file)
+
+    try:
+        from modules.lead_scoring import recompute_all_scores
+        with db.session_scope() as session:
+            recompute_all_scores(session)
+    except Exception as exc:
+        logger.warning("Lead score recompute skipped: %s", exc)
+
+    _put_setting(db, "bootstrap_version", BOOTSTRAP_VERSION)
+
+
 def initialize_crm(db: DatabaseConnection, progress: ProgressCallback | None = None, force_sync: bool = False) -> StartupStatus:
-    """Prepare MySQL, sync Excel when needed, and return dashboard readiness."""
+    """Connect to MySQL; run heavy bootstrap ONCE (then fast path on every other load)."""
+    global _PROCESS_BOOTSTRAPPED
     logger = setup_logger(LOG_DIR)
     status = StartupStatus()
 
     try:
         _emit(progress, "MySQL Connected", "Checking MySQL connection")
-        db.ensure_database_exists()
         if not db.health_check():
-            raise RuntimeError(db.last_error_message or "MySQL health check failed")
+            # Only attempt DB creation if the plain connection failed (first run).
+            db.ensure_database_exists()
+            if not db.health_check():
+                raise RuntimeError(db.last_error_message or "MySQL health check failed")
         status.mysql_connected = True
 
-        _emit(progress, "Tables Loaded", "Creating or upgrading CRM tables")
-        Base.metadata.create_all(db.engine)
-        ensure_phase2_schema(db.engine)
-        ensure_phase3_schema(db.engine)
-        ensure_phase4_schema(db.engine)
-        ensure_phase5_data_cleanup(db.engine)
-        ensure_assignment_integrity(db.engine)
-        ensure_column_defaults(db.engine)
-        _ensure_default_admin(db)
-        status.tables_loaded = _required_tables_exist(db)
-        if not status.tables_loaded:
-            raise RuntimeError("Required CRM tables are missing after schema initialization.")
+        # Decide whether the expensive one-time bootstrap is needed.
+        needs_bootstrap = force_sync or not _PROCESS_BOOTSTRAPPED
+        if needs_bootstrap and not force_sync:
+            # Cheap single flag read; skip the heavy block if already bootstrapped before.
+            try:
+                if _get_setting(db, "bootstrap_version") == BOOTSTRAP_VERSION:
+                    needs_bootstrap = False
+            except Exception:
+                needs_bootstrap = True
 
-        _emit(progress, "Excel Synced", "Checking current database and Excel source")
-        lead_count = _lead_count(db)
-        source_file, source_kind = _find_sync_source()
-        dropdown_source = _find_dropdown_source(source_file)
-        if dropdown_source:
-            sync_dropdowns_from_workbook(dropdown_source)
-            status.messages.append(f"Dropdown values synchronized from {dropdown_source.name}.")
-        # Also force sync when lead count looks stale (< 200) vs known Google Sheet size
-        should_sync = force_sync or lead_count == 0 or lead_count < 200 or _source_changed(db, source_file)
-
-        if should_sync and source_file:
-            if lead_count == 0:
-                status.messages.append("Database empty. Importing Excel data...")
-            cleaned_file = _prepare_cleaned_file(source_file, source_kind)
-            summary = MySQLSyncEngine(db, logger).import_cleaned_excel(cleaned_file, user_name="startup")
-            _update_sequence_from_import(db)
-            _set_sync_setting(db, source_file)
-            status.imported_file = str(cleaned_file)
-            status.messages.append(
-                f"Excel sync completed: {summary.inserted_rows} inserted, {summary.updated_rows} updated, "
-                f"{summary.skipped_rows} skipped, {summary.failed_rows} failed."
-            )
-        elif source_file:
-            status.messages.append("Excel source already synchronized.")
+        if needs_bootstrap:
+            _emit(progress, "Tables Loaded", "First-time setup: migrations, cleanup, scores")
+            _run_full_bootstrap(db, status, logger, force_sync)
+            status.messages.append("One-time setup complete.")
         else:
-            status.messages.append("No Excel workbook found in data/raw or data/processed.")
+            _emit(progress, "Tables Loaded", "Ready")
 
-        # Recompute lead scores for every lead (imported leads start at 0.0).
-        try:
-            from modules.lead_scoring import recompute_all_scores
-            with db.session_scope() as session:
-                updated = recompute_all_scores(session)
-            if updated:
-                status.messages.append(f"Lead scores recomputed for {updated} leads.")
-        except Exception as exc:  # never block dashboard on scoring
-            logger.warning("Lead score recompute skipped: %s", exc)
-
+        _PROCESS_BOOTSTRAPPED = True
+        status.tables_loaded = True
         status.lead_count = _lead_count(db)
-        status.excel_synced = bool(status.lead_count) or source_file is None
-        status.dashboard_ready = status.mysql_connected and status.tables_loaded
-        if status.dashboard_ready:
-            status.messages.append("Dashboard synchronized successfully.")
-        logger.info("CRM startup completed: %s", status)
+        status.excel_synced = True
+        status.dashboard_ready = status.mysql_connected
+        status.messages.append("Dashboard ready.")
+        logger.info("CRM startup completed (bootstrap=%s): leads=%s", needs_bootstrap, status.lead_count)
         return status
     except Exception as exc:
         message = _format_startup_error(db, exc)
