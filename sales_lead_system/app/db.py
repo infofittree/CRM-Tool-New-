@@ -16,6 +16,34 @@ def get_db() -> DatabaseConnection:
     return DatabaseConnection(logger=setup_logger(LOG_DIR))
 
 
+# --------------------------------------------------------------------------- #
+# Cached data loaders — avoid re-querying the remote DB on every Streamlit rerun.
+# Short TTL keeps data fresh; write actions call clear_data_cache() for instant
+# updates. Keyed by role + full_name so each salesperson's scope caches separately.
+# --------------------------------------------------------------------------- #
+@st.cache_data(ttl=45, show_spinner=False)
+def load_leads_df(role: str, full_name: str, limit: int = 5000):
+    """Cached scoped leads dataframe."""
+    from modules.crm_service import CRMService
+    with get_db().session_scope() as session:
+        return CRMService(session).leads_dataframe({"role": role, "full_name": full_name}, limit)
+
+
+@st.cache_data(ttl=45, show_spinner=False)
+def load_tasks(role: str, full_name: str, upcoming_days: int = 7, max_today: int = 40):
+    """Cached derived task queue."""
+    from modules.crm_service import CRMService
+    with get_db().session_scope() as session:
+        return CRMService(session).get_tasks({"role": role, "full_name": full_name},
+                                             upcoming_days=upcoming_days, max_today=max_today)
+
+
+def clear_data_cache() -> None:
+    """Invalidate cached reads after any write so the UI updates immediately."""
+    load_leads_df.clear()
+    load_tasks.clear()
+
+
 def ensure_startup(db: DatabaseConnection, force_sync: bool = False) -> StartupStatus:
     """Run CRM startup once per Streamlit session and return the latest status."""
     if force_sync or "startup_status" not in st.session_state:

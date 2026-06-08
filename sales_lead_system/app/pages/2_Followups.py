@@ -63,6 +63,7 @@ def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:
         unsafe_allow_html=True,
     )
     with st.expander("Action"):
+        from app.db import clear_data_cache
         c1, c2 = st.columns(2)
         if c1.button("✅ Mark Done", key=f"done_{key}", use_container_width=True):
             service.add_quick_followup(
@@ -71,26 +72,31 @@ def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:
                  "next_followup": today + timedelta(days=3), "mode": task.get("mode")},
                 user,
             )
+            clear_data_cache()
             st.success("Marked done. Next touch scheduled in 3 days.")
             st.rerun()
         new_date = c2.date_input("Reschedule to", value=today + timedelta(days=2), key=f"resdate_{key}")
         if c2.button("📅 Reschedule", key=f"res_{key}", use_container_width=True):
             service.reschedule_followup(task["lead_id"], new_date, user, note="Rescheduled from task list")
+            clear_data_cache()
             st.success(f"Rescheduled to {new_date}.")
             st.rerun()
         note = st.text_input("Add a note", key=f"note_{key}")
         if st.button("📝 Add Note", key=f"addnote_{key}", use_container_width=True):
             if note.strip():
                 service.append_note(task["lead_id"], note.strip(), user)
+                clear_data_cache()
                 st.success("Note added.")
                 st.rerun()
             else:
                 st.warning("Type a note first.")
 
 
+from app.db import load_tasks
+_tasks_cached = load_tasks(user["role"], user["full_name"], 7, 40)
 with db.session_scope() as session:
     service = CRMService(session)
-    tasks = service.get_tasks(user, upcoming_days=7, max_today=40)
+    tasks = _tasks_cached
     s = tasks["summary"]
 
     m1, m2, m3, m4 = st.columns(4)

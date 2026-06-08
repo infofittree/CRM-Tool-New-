@@ -84,6 +84,8 @@ def _quick_action(service: CRMService, t: dict, user: dict) -> None:
                      "status": stage, "lost_reason": None if lost_reason == "—" else lost_reason},
                     user,
                 )
+                from app.db import clear_data_cache
+                clear_data_cache()
                 st.success("✅ Updated — notes logged, next follow-up scheduled.")
                 st.rerun()
 
@@ -100,8 +102,9 @@ with db.session_scope() as session:
         focus = user
         who = user["full_name"]
 
-    leads = service.leads_dataframe(focus, limit=5000)
-    tasks = service.get_tasks(focus, upcoming_days=7, max_today=20)
+    from app.db import load_leads_df, load_tasks
+    leads = load_leads_df(focus["role"], focus["full_name"], 5000)
+    tasks = load_tasks(focus["role"], focus["full_name"], 7, 20)
     s = tasks["summary"]
 
     if leads.empty:

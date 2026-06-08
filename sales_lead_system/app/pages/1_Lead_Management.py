@@ -29,9 +29,10 @@ render_startup_status(startup_status)
 if startup_status.errors:
     st.error(startup_status.errors[0])
     st.stop()
+from app.db import load_leads_df, clear_data_cache
 with db.session_scope() as session:
     service = CRMService(session)
-    leads = service.leads_dataframe(user, limit=1000)
+    leads = load_leads_df(user["role"], user["full_name"], 1000)
     salespersons = service.get_salespersons()
 
     with st.expander("Add Lead", expanded=False):
@@ -207,6 +208,7 @@ with db.session_scope() as session:
                      "buyer_tag": None if (new_level in (None, "— none —")) else new_level},
                     user,
                 )
+                clear_data_cache()
                 st.success("Lead updated and next follow-up scheduled.")
                 st.rerun()
         if st.button("✅ Mark Order Closed (Won)", use_container_width=True):
@@ -216,10 +218,12 @@ with db.session_scope() as session:
                  "next_followup": date.today() + timedelta(days=30), "status": "Order Closed"},
                 user,
             )
+            clear_data_cache()
             st.success("Lead marked Order Closed.")
             st.rerun()
         if st.button("Delete Lead", use_container_width=True):
             service.leads.delete_lead(session, selected, soft_delete=True)
             service.activity.log_activity(session, "SOFT_DELETE_LEAD", user["full_name"], selected)
+            clear_data_cache()
             st.warning("Lead deleted.")
             st.rerun()

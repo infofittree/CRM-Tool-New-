@@ -44,12 +44,14 @@ page_header(
 
 today = date.today()
 
+from app.db import load_leads_df, load_tasks, clear_data_cache
+# Cached reads (fast on every rerun); heavy DB work only when cache expires/cleared.
+leads_df = load_leads_df(user["role"], user["full_name"], 5000)
+tasks = load_tasks(user["role"], user["full_name"], 7, 40)
+ts = tasks["summary"]
 with db.session_scope() as session:
     service = CRMService(session)
     metrics = service.dashboard_metrics(user)
-    leads_df = service.leads_dataframe(user, limit=5000)
-    tasks = service.get_tasks(user, upcoming_days=7, max_today=40)
-    ts = tasks["summary"]
     engagement = dashboard_queries.get_engagement_stats(session, user, days=7)
     performance_df = dashboard_queries.get_salesperson_stats(session, user)
     activity_df = dashboard_queries.get_recent_activities(session)
@@ -117,6 +119,7 @@ with db.session_scope() as session:
                          "next_followup": today + timedelta(days=3), "mode": task.get("mode")},
                         user,
                     )
+                    clear_data_cache()
                     st.rerun()
 
     st.divider()
