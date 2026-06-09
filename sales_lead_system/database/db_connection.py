@@ -57,6 +57,12 @@ class DatabaseConnection:
         finally:
             server_engine.dispose()
 
+    # Streamlit control-flow exceptions (st.rerun(), st.stop(), st.switch_page())
+    # are NOT errors — if they fire inside a session_scope block AFTER a write,
+    # the work must still be COMMITTED, not rolled back. These are matched by
+    # class name so the database layer needs no Streamlit import.
+    _CONTROL_FLOW_EXC = {"RerunException", "RerunData", "StopException", "StreamlitAPIException"}
+
     @contextmanager
     def session_scope(self) -> Iterator[Session]:
         """Provide a transactional session with commit/rollback handling."""
@@ -68,9 +74,17 @@ class DatabaseConnection:
             session.rollback()
             self.logger.exception("Database operation failed")
             raise
-        except Exception:
-            session.rollback()
-            self.logger.exception("Unexpected database operation failure")
+        except BaseException as exc:
+            # Commit on Streamlit reruns/stops; rollback on genuine errors.
+            if type(exc).__name__ in self._CONTROL_FLOW_EXC:
+                try:
+                    session.commit()
+                except SQLAlchemyError:
+                    session.rollback()
+                    self.logger.exception("Commit on rerun failed")
+            else:
+                session.rollback()
+                self.logger.exception("Unexpected database operation failure")
             raise
         finally:
             session.close()

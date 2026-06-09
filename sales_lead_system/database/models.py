@@ -248,3 +248,48 @@ class EngagementEvent(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     occurred_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+
+class DeletedLead(Base):
+    """Audit log of deleted leads (Phase 3) — full snapshot kept for zero data loss."""
+
+    __tablename__ = "deleted_leads"
+    __table_args__ = (Index("ix_deleted_leads_lead_id", "lead_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[str | None] = mapped_column(String(32))
+    company_name: Mapped[str | None] = mapped_column(String(255))
+    contact_name: Mapped[str | None] = mapped_column(String(255))
+    assigned_to: Mapped[str | None] = mapped_column(String(100))
+    deleted_by: Mapped[str | None] = mapped_column(String(100))
+    deleted_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    snapshot: Mapped[str | None] = mapped_column(Text)  # full JSON of the lead row
+
+
+class LeadTransfer(Base):
+    """History of lead ownership transfers (Phase 4)."""
+
+    __tablename__ = "lead_transfers"
+    __table_args__ = (Index("ix_lead_transfers_lead_id", "lead_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    transferred_from: Mapped[str | None] = mapped_column(String(100))
+    transferred_to: Mapped[str | None] = mapped_column(String(100))
+    transfer_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    transferred_by: Mapped[str | None] = mapped_column(String(100))
+
+
+class ErrorLog(Base):
+    """Captured runtime errors (Phase 7) — no silent failures."""
+
+    __tablename__ = "error_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    module: Mapped[str | None] = mapped_column(String(100))
+    error: Mapped[str | None] = mapped_column(Text)
+    user_name: Mapped[str | None] = mapped_column(String(100))
+    traceback: Mapped[str | None] = mapped_column(Text)

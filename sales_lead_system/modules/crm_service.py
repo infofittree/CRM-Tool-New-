@@ -64,15 +64,28 @@ class CRMService:
         self.validator = ValidationEngine()
 
     def generate_lead_id(self, year: int | None = None) -> str:
-        """Generate a MySQL-backed lead ID."""
+        """Generate a collision-proof lead ID.
+
+        After a bulk import the sequence counter can lag behind the real max
+        lead number, causing duplicate-PK failures. We reconcile the counter with
+        the actual highest existing FT-YYYY-NNNN before issuing the next id.
+        """
+        import re
         year = year or date.today().year
+        prefix = f"FT-{year}-"
+        max_existing = 0
+        for lid in self.session.scalars(select(Lead.lead_id).where(Lead.lead_id.like(prefix + "%"))):
+            m = re.match(rf"FT-{year}-(\d+)$", str(lid))
+            if m:
+                max_existing = max(max_existing, int(m.group(1)))
+
         sequence = self.session.get(LeadSequence, year)
         if sequence is None:
-            sequence = LeadSequence(year=year, last_number=0)
+            sequence = LeadSequence(year=year, last_number=max_existing)
             self.session.add(sequence)
             self.session.flush()
-        sequence.last_number += 1
-        return f"FT-{year}-{sequence.last_number:04d}"
+        sequence.last_number = max(sequence.last_number, max_existing) + 1
+        return f"{prefix}{sequence.last_number:04d}"
 
     def get_salespersons(self) -> list[str]:
         """Return active salesperson names from users and existing assignments."""
@@ -120,25 +133,30 @@ class CRMService:
         if duplicates and not force:
             return SaveResult(False, "Possible duplicate detected.", duplicates=duplicates)
 
-        cleaned["lead_id"] = cleaned.get("lead_id") or self.generate_lead_id()
-        cleaned["created_date"] = cleaned.get("created_date") or date.today()
-        cleaned["lead_score"] = cleaned.get("lead_score") or self._initial_lead_score(cleaned)
-        lead = self.leads.create_lead(self.session, cleaned)
+        try:
+            cleaned["lead_id"] = cleaned.get("lead_id") or self.generate_lead_id()
+            cleaned["created_date"] = cleaned.get("created_date") or date.today()
+            cleaned["lead_score"] = cleaned.get("lead_score") or self._initial_lead_score(cleaned)
+            lead = self.leads.create_lead(self.session, cleaned)
 
-        if cleaned.get("last_discussion") or cleaned.get("next_action") or cleaned.get("next_follow_up"):
-            self.followups.add_followup(
-                self.session,
-                {
-                    "lead_id": lead.lead_id,
-                    "followup_date": date.today(),
-                    "discussion": cleaned.get("last_discussion"),
-                    "next_action": cleaned.get("next_action"),
-                    "next_followup": cleaned.get("next_follow_up"),
-                    "updated_by": user["full_name"],
-                },
-            )
-        self.activity.log_activity(self.session, "CREATE_LEAD_FROM_DATA_ENTRY", user["full_name"], lead.lead_id)
-        return SaveResult(True, "Lead saved successfully.", lead_id=lead.lead_id)
+            if cleaned.get("last_discussion") or cleaned.get("next_action") or cleaned.get("next_follow_up"):
+                self.followups.add_followup(
+                    self.session,
+                    {
+                        "lead_id": lead.lead_id,
+                        "followup_date": date.today(),
+                        "discussion": cleaned.get("last_discussion"),
+                        "next_action": cleaned.get("next_action"),
+                        "next_followup": cleaned.get("next_follow_up"),
+                        "updated_by": user["full_name"],
+                    },
+                )
+            self.activity.log_activity(self.session, "CREATE_LEAD_FROM_DATA_ENTRY", user["full_name"], lead.lead_id)
+            return SaveResult(True, "Lead saved successfully.", lead_id=lead.lead_id)
+        except Exception as exc:  # Phase 7: never fail silently
+            import traceback as _tb
+            self.log_error("save_lead_from_entry", str(exc), user, _tb.format_exc())
+            return SaveResult(False, f"Save failed: {exc}")
 
     def add_quick_followup(self, lead_id: str, payload: dict[str, Any], user: dict) -> None:
         """Add follow-up, update lead state, and audit."""
@@ -269,6 +287,59 @@ class CRMService:
                 summary["failed_rows"] += 1
         return summary
 
+    def delete_lead_logged(self, lead_id: str, user: dict, reason: str | None = None) -> bool:
+        """Phase 3: snapshot the lead to deleted_leads, then soft-delete it. No data loss."""
+        import json
+        from datetime import datetime
+        from database.models import DeletedLead
+        lead = self.session.get(Lead, lead_id)
+        if lead is None:
+            return False
+        snapshot = {c.name: getattr(lead, c.name) for c in Lead.__table__.columns}
+        self.session.add(DeletedLead(
+            lead_id=lead_id,
+            company_name=lead.company_name,
+            contact_name=lead.contact_person,
+            assigned_to=lead.assigned_to,
+            deleted_by=user["full_name"],
+            reason=reason,
+            snapshot=json.dumps(snapshot, default=str),
+        ))
+        lead.deleted_at = datetime.utcnow()  # soft delete — row preserved
+        self.activity.log_activity(self.session, "DELETE_LEAD", user["full_name"], lead_id, remarks=reason)
+        return True
+
+    def transfer_lead(self, lead_id: str, new_owner: str, user: dict, reason: str | None = None) -> bool:
+        """Phase 4: reassign a lead to another salesperson and record the transfer."""
+        from database.models import LeadTransfer
+        lead = self.session.get(Lead, lead_id)
+        if lead is None or not new_owner:
+            return False
+        old_owner = lead.assigned_to
+        if old_owner == new_owner:
+            return False
+        self.session.add(LeadTransfer(
+            lead_id=lead_id, transferred_from=old_owner, transferred_to=new_owner,
+            reason=reason, transferred_by=user["full_name"],
+        ))
+        lead.assigned_to = new_owner
+        self.activity.log_activity(
+            self.session, "TRANSFER_LEAD", user["full_name"], lead_id,
+            remarks=f"{old_owner or '—'} -> {new_owner}" + (f" ({reason})" if reason else ""),
+        )
+        return True
+
+    def log_error(self, module: str, error: str, user: dict | None = None, tb: str | None = None) -> None:
+        """Phase 7: persist an error so failures are never silent."""
+        try:
+            from database.models import ErrorLog
+            self.session.add(ErrorLog(
+                module=module, error=str(error)[:2000],
+                user_name=(user or {}).get("full_name"), traceback=(tb or "")[:5000],
+            ))
+        except Exception:
+            pass  # logging must never raise
+
     def find_duplicates(self, payload: dict[str, Any], threshold: int = 88) -> list[dict[str, Any]]:
         """Find likely existing duplicates by email, phone, and fuzzy company name."""
         company = str(payload.get("company_name") or "")
@@ -309,10 +380,14 @@ class CRMService:
     def _validate_entry(self, payload: dict[str, Any]) -> list[str]:
         from datetime import timedelta
         errors = []
-        # Required core fields
-        for field in ("company_name", "status", "assigned_to"):
+        # Required core fields (company name is OPTIONAL — Phase 6)
+        for field in ("contact_person", "status", "assigned_to", "country"):
             if not payload.get(field):
-                errors.append(f"{field} is required")
+                label = field.replace("_", " ").title()
+                errors.append(f"{label} is required")
+        # Phone OR Email is required (at least one way to reach the buyer)
+        if not str(payload.get("phone") or "").strip() and not str(payload.get("email") or "").strip():
+            errors.append("Provide at least a Phone number or an Email.")
         # Status must be canonical
         status = payload.get("status", "")
         if status and status not in self._CANONICAL_STATUSES:
@@ -365,7 +440,11 @@ class CRMService:
         phone = self._clean_phone(payload.get("phone"))
         alternate = self._clean_phone(payload.get("alternate_number"))
         whatsapp = self._clean_phone(payload.get("whatsapp_number"))
+        # Company name is optional (Phase 6): fall back to contact person so the
+        # display/dedup stays meaningful and the NOT NULL column is satisfied.
         company = str(payload.get("company_name") or "").strip().upper()
+        if not company:
+            company = str(payload.get("contact_person") or "").strip().upper() or "—"
         clean_country = normalize_country(payload.get("country"))
         cleaned = {key: (value.strip() if isinstance(value, str) else value) for key, value in payload.items()}
         # Category: NO auto-default — must be set by the salesperson (mandatory)

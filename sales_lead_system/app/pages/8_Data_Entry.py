@@ -79,12 +79,12 @@ with db.session_scope() as session:
         with st.form("fast_lead", clear_on_submit=True):
             st.caption("Fields marked * are mandatory. The CRM will block save without them.")
             c1, c2, c3 = st.columns(3)
-            company_name = c1.text_input("Company Name *")
+            company_name = c1.text_input("Company Name (optional)")
             contact_person = c2.text_input("Contact Person *")
             country = c3.selectbox("Country *", COUNTRIES)
-            phone = c1.text_input("Contact Number *")
-            email = c2.text_input("Email")
-            product_interest = c3.text_input("Product Requirement *")
+            phone = c1.text_input("Contact Number * (phone or email)")
+            email = c2.text_input("Email * (phone or email)")
+            product_interest = c3.text_input("Product Requirement")
             # Continent auto-fills from country — shown read-only for confidence
             c3.caption(f"🌍 Continent (auto): {country_continent(country) or '—'}")
 

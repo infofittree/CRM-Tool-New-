@@ -114,6 +114,11 @@ def initialize_crm(db: DatabaseConnection, progress: ProgressCallback | None = N
                 raise RuntimeError(db.last_error_message or "MySQL health check failed")
         status.mysql_connected = True
 
+        # Always ensure tables exist (cheap, idempotent) so new tables added in
+        # later releases are created without forcing a full heavy re-bootstrap.
+        if not _PROCESS_BOOTSTRAPPED:
+            Base.metadata.create_all(db.engine)
+
         # Decide whether the expensive one-time bootstrap is needed.
         needs_bootstrap = force_sync or not _PROCESS_BOOTSTRAPPED
         if needs_bootstrap and not force_sync:

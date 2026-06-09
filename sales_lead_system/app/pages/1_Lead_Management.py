@@ -221,9 +221,38 @@ with db.session_scope() as session:
             clear_data_cache()
             st.success("Lead marked Order Closed.")
             st.rerun()
-        if st.button("Delete Lead", use_container_width=True):
-            service.leads.delete_lead(session, selected, soft_delete=True)
-            service.activity.log_activity(session, "SOFT_DELETE_LEAD", user["full_name"], selected)
-            clear_data_cache()
-            st.warning("Lead deleted.")
-            st.rerun()
+        st.divider()
+        # ---- Transfer Lead (Phase 4) ----
+        st.markdown("**Transfer Lead**")
+        _others = [s for s in salespersons if s != detail.get("assigned_to")]
+        tcol1, tcol2 = st.columns([2, 1])
+        transfer_to = tcol1.selectbox("Transfer to", _others if _others else salespersons, key=f"xfer_{selected}")
+        transfer_reason = st.text_input("Transfer reason (optional)", key=f"xreason_{selected}")
+        if tcol2.button("Transfer", use_container_width=True, key=f"xbtn_{selected}"):
+            if service.transfer_lead(selected, transfer_to, user, transfer_reason or None):
+                clear_data_cache()
+                st.success(f"Lead transferred to {transfer_to}.")
+                st.rerun()
+            else:
+                st.warning("Transfer not applied (same owner or lead missing).")
+
+        st.divider()
+        # ---- Delete Lead with confirmation (Phase 3) ----
+        st.markdown("**Danger zone**")
+        if not st.session_state.get(f"confirm_del_{selected}"):
+            if st.button("🗑️ Delete Lead", use_container_width=True, key=f"del_{selected}"):
+                st.session_state[f"confirm_del_{selected}"] = True
+                st.rerun()
+        else:
+            st.error("Are you sure you want to delete this lead? It will be logged and recoverable.")
+            del_reason = st.text_input("Reason (optional)", key=f"delreason_{selected}")
+            dc1, dc2 = st.columns(2)
+            if dc1.button("Yes, delete", use_container_width=True, key=f"delyes_{selected}"):
+                service.delete_lead_logged(selected, user, del_reason or None)
+                st.session_state.pop(f"confirm_del_{selected}", None)
+                clear_data_cache()
+                st.warning("Lead deleted and logged to deleted_leads.")
+                st.rerun()
+            if dc2.button("Cancel", use_container_width=True, key=f"delno_{selected}"):
+                st.session_state.pop(f"confirm_del_{selected}", None)
+                st.rerun()
