@@ -14,6 +14,7 @@ import streamlit as st
 
 from app.db import ensure_startup, get_db, render_startup_status
 from app.ui import configure_page, empty_state, page_header, require_login, score_badge, status_pill
+from modules.clock import today as biz_today
 from modules.crm_service import CRMService
 
 configure_page("Follow-ups")
@@ -27,7 +28,7 @@ if startup_status.errors:
     st.error(startup_status.errors[0])
     st.stop()
 
-today = date.today()
+today = biz_today()
 
 
 def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:

@@ -17,6 +17,7 @@ from database.models import ALLOWED_STATUSES, EngagementEvent, Lead, LeadSequenc
 from modules import dashboard_queries
 from modules.dropdown_config import option_list
 from modules.validation_engine import EMAIL_PATTERN, ValidationEngine
+from modules.clock import today as biz_today
 
 
 LEAD_SOURCES = option_list("lead_sources")
@@ -71,7 +72,7 @@ class CRMService:
         the actual highest existing FT-YYYY-NNNN before issuing the next id.
         """
         import re
-        year = year or date.today().year
+        year = year or biz_today().year
         prefix = f"FT-{year}-"
         max_existing = 0
         for lid in self.session.scalars(select(Lead.lead_id).where(Lead.lead_id.like(prefix + "%"))):
@@ -135,7 +136,7 @@ class CRMService:
 
         try:
             cleaned["lead_id"] = cleaned.get("lead_id") or self.generate_lead_id()
-            cleaned["created_date"] = cleaned.get("created_date") or date.today()
+            cleaned["created_date"] = cleaned.get("created_date") or biz_today()
             cleaned["lead_score"] = cleaned.get("lead_score") or self._initial_lead_score(cleaned)
             lead = self.leads.create_lead(self.session, cleaned)
 
@@ -144,7 +145,7 @@ class CRMService:
                     self.session,
                     {
                         "lead_id": lead.lead_id,
-                        "followup_date": date.today(),
+                        "followup_date": biz_today(),
                         "discussion": cleaned.get("last_discussion"),
                         "next_action": cleaned.get("next_action"),
                         "next_followup": cleaned.get("next_follow_up"),
@@ -164,7 +165,7 @@ class CRMService:
             self.session,
             {
                 "lead_id": lead_id,
-                "followup_date": date.today(),
+                "followup_date": biz_today(),
                 "discussion": payload.get("discussion"),
                 "next_action": payload.get("next_action"),
                 "next_followup": payload.get("next_followup"),
@@ -173,7 +174,7 @@ class CRMService:
         )
         lead = self.session.get(Lead, lead_id)
         if lead:
-            lead.last_contact_date = date.today()
+            lead.last_contact_date = biz_today()
             if payload.get("next_action"):
                 lead.next_action_plan = payload["next_action"]
             new_status = payload.get("status")
@@ -247,7 +248,7 @@ class CRMService:
             self.session,
             {
                 "lead_id": lead_id,
-                "followup_date": date.today(),
+                "followup_date": biz_today(),
                 "discussion": note or "Rescheduled",
                 "next_action": "Follow up",
                 "next_followup": new_date,
@@ -263,7 +264,7 @@ class CRMService:
         """Append a timestamped note to a lead and log an engagement event."""
         lead = self.session.get(Lead, lead_id)
         if lead:
-            stamp = date.today().isoformat()
+            stamp = biz_today().isoformat()
             existing = (lead.remarks or "").strip()
             lead.remarks = f"{existing}\n[{stamp} {user['full_name']}] {note}".strip()
         self.session.add(
@@ -402,7 +403,7 @@ class CRMService:
                     fu_date = date.fromisoformat(str(fu_date)[:10])
                 if hasattr(fu_date, 'date'):  # datetime → date
                     fu_date = fu_date.date()
-                days_ahead = (fu_date - date.today()).days
+                days_ahead = (fu_date - biz_today()).days
                 if days_ahead > self._MAX_FOLLOWUP_DAYS:
                     errors.append(f"Follow-up date cannot exceed {self._MAX_FOLLOWUP_DAYS} days from today. Set a closer date.")
                 elif days_ahead < -180:

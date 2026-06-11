@@ -23,6 +23,7 @@ from modules.status_taxonomy import (
     STAGE_ACTION, STAGE_CADENCE, STAGE_PRIORITY,
     is_open, to_canonical,
 )
+from modules.clock import today as _biz_today
 
 # ── Sane daily queue limit ───────────────────────────────────────────────────
 DEFAULT_MAX_TODAY = 20
@@ -86,14 +87,16 @@ def generate_tasks(
         today_capped  the visible slice for the dashboard
         summary       dict of KPI counts
     """
-    today = today or date.today()
+    today = today or _biz_today()
 
-    # Aggregate next follow-up date per lead (explicit)
-    fu_next: dict[str, Any] = dict(
-        session.execute(
-            select(FollowUp.lead_id, func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
-        ).all()
-    )
+    # Next follow-up date per lead = the date on the MOST RECENTLY ENTERED follow-up
+    # row (ordered by followup_id), NOT max() — otherwise rescheduling to an earlier
+    # date is ignored because an older row had a further-out date.
+    fu_next: dict[str, Any] = {}
+    for lid, nf in session.execute(
+        select(FollowUp.lead_id, FollowUp.next_followup).order_by(FollowUp.followup_id.asc())
+    ).all():
+        fu_next[lid] = nf  # later (higher id) rows overwrite → latest decision wins
     fu_counts: dict[str, int] = dict(
         session.execute(select(FollowUp.lead_id, func.count()).group_by(FollowUp.lead_id)).all()
     )

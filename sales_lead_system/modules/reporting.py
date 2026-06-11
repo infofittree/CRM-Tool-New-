@@ -7,12 +7,14 @@ last_contact_date) plus a next-follow-up map. No DB writes.
 
 from __future__ import annotations
 
+
 from datetime import date
 from typing import Any
 
 import pandas as pd
 
 from modules.status_taxonomy import CANONICAL_STATUSES
+from modules.clock import today as biz_today
 
 # Report definitions: stage → (icon, helptext)
 STAGE_REPORTS: dict[str, str] = {
@@ -35,11 +37,16 @@ def attach_followups(leads: pd.DataFrame, followups: pd.DataFrame) -> pd.DataFra
     if df.empty:
         return df
     if not followups.empty and "lead_id" in followups.columns and "next_followup" in followups.columns:
-        nxt = followups.dropna(subset=["next_followup"]).groupby("lead_id")["next_followup"].max()
+        # Use the latest-entered follow-up per lead (by followup_id), not max date,
+        # so a rescheduled-earlier date is respected.
+        fu = followups.copy()
+        if "followup_id" in fu.columns:
+            fu = fu.sort_values("followup_id")
+        nxt = fu.dropna(subset=["next_followup"]).groupby("lead_id")["next_followup"].last()
         df["next_followup"] = df["lead_id"].map(nxt)
     else:
         df["next_followup"] = pd.NaT
-    today = pd.Timestamp(date.today())
+    today = pd.Timestamp(biz_today())
     nf = pd.to_datetime(df["next_followup"], errors="coerce")
     df["followup_state"] = "None"
     df.loc[nf.notna() & (nf < today), "followup_state"] = "Overdue"

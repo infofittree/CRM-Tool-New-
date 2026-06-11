@@ -15,6 +15,7 @@ import streamlit as st
 
 from app.db import ensure_startup, get_db, render_startup_status
 from app.ui import configure_page, empty_state, page_header, require_login, section_header
+from modules.clock import today as biz_today
 from modules.crm_service import CRMService
 from modules.dropdown_config import option_list
 from modules.geo import ALL_COUNTRIES, LEAD_SOURCES, country_continent
@@ -36,7 +37,7 @@ if startup_status.errors:
 LOST_REASONS = option_list("lost_reasons")
 CATEGORIES = ["— select —", "A", "B", "C"]
 ENGAGEMENT = ["Frequent", "Medium", "Low"]
-MAX_FU = date.today() + timedelta(days=30)
+MAX_FU = biz_today() + timedelta(days=30)
 
 with db.session_scope() as session:
     service = CRMService(session)
@@ -99,8 +100,8 @@ with db.session_scope() as session:
                                       help="How often the buyer communicates with us")
             assigned_to = c8.selectbox("Owner / Salesperson *", salespersons)
             next_follow_up = c9.date_input("Follow-up Date * (max 30 days)",
-                                           value=date.today() + timedelta(days=2),
-                                           min_value=date.today() - timedelta(days=1),
+                                           value=biz_today() + timedelta(days=2),
+                                           min_value=biz_today() - timedelta(days=1),
                                            max_value=MAX_FU)
             lost_reason = c7.selectbox("Lost Reason (only if Lost)", ["—"] + LOST_REASONS)
 
@@ -150,7 +151,7 @@ with db.session_scope() as session:
                 discussion = st.text_area("What happened?")
                 f1, f2 = st.columns(2)
                 new_status = f1.selectbox("Update Status", list(CANONICAL_STATUSES))
-                next_fu = f2.date_input("Next Follow-up * (max 30d)", value=date.today() + timedelta(days=2),
+                next_fu = f2.date_input("Next Follow-up * (max 30d)", value=biz_today() + timedelta(days=2),
                                         max_value=MAX_FU)
                 next_plan = st.text_input("Next Action Plan *", placeholder="What will you do next?")
                 lr = st.selectbox("Lost Reason (if Lost)", ["—"] + LOST_REASONS)

@@ -17,6 +17,7 @@ import streamlit as st
 from app.assets.theme import STATUS_COLORS, style_plotly
 from app.db import ensure_startup, get_db, render_startup_status
 from app.ui import configure_page, empty_state, page_header, require_login, score_badge, section_header, status_pill
+from modules.clock import today as biz_today
 from modules.crm_service import CRMService
 from modules.status_taxonomy import FUNNEL_ORDER
 
@@ -31,7 +32,7 @@ if startup_status.errors:
     st.error(startup_status.errors[0])
     st.stop()
 
-today = date.today()
+today = biz_today()
 
 from modules.status_taxonomy import CANONICAL_STATUSES
 from modules.dropdown_config import option_list

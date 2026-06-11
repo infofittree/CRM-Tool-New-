@@ -18,6 +18,7 @@ from app.db import ensure_startup, get_db, render_startup_status
 from app.login import render_login
 from app.ui import configure_page, empty_state, page_header, render_sidebar, score_badge, section_header, status_pill
 from modules import dashboard_queries
+from modules.clock import today as biz_today
 from modules.crm_service import CRMService
 from modules.status_taxonomy import FUNNEL_ORDER
 
@@ -42,7 +43,7 @@ page_header(
     "Sales Operating System",
 )
 
-today = date.today()
+today = biz_today()
 
 from app.db import load_leads_df, load_tasks, clear_data_cache
 # Cached reads (fast on every rerun); heavy DB work only when cache expires/cleared.

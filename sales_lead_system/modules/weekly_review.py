@@ -11,6 +11,7 @@ logic; it only reads.
 
 from __future__ import annotations
 
+
 from collections import Counter, defaultdict
 from datetime import date, datetime, time, timedelta
 from typing import Any
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Session
 from database.models import ActivityLog, EngagementEvent, FollowUp, Lead
 from modules.lead_scoring import band_for_score
 from modules.status_taxonomy import is_lost, is_open, is_won, to_standard
+from modules.clock import today as biz_today
 
 # ---- communication event types ----
 _CALL = {"call"}
@@ -47,7 +49,7 @@ _LOSS_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
 # --------------------------------------------------------------------------- #
 def week_bounds(reference: date | None = None, offset_weeks: int = 0) -> tuple[date, date]:
     """Return (monday, sunday) for the week containing reference + offset."""
-    reference = reference or date.today()
+    reference = reference or biz_today()
     monday = reference - timedelta(days=reference.weekday()) + timedelta(weeks=offset_weeks)
     return monday, monday + timedelta(days=6)
 
@@ -180,7 +182,7 @@ def weekly_overview(session: Session, user: dict[str, Any], start: date, end: da
         if c["total"] > 0:
             contacted.add(lid)
 
-    today = date.today()
+    today = biz_today()
     pending = overdue = 0
     bands = Counter()
     statuses = Counter()
@@ -282,7 +284,7 @@ def salesperson_performance(session: Session, start: date, end: date) -> list[di
     acts = _collect_week_activity(session, lead_ids, start, end)
     lead_owner = {l.lead_id: (l.assigned_to or "Unassigned") for l in leads}
 
-    today = date.today()
+    today = biz_today()
     fu_next = dict(session.execute(
         select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
     ).all())
@@ -336,7 +338,7 @@ def company_activity(session: Session, user: dict[str, Any], start: date, end: d
     fu_next = dict(session.execute(
         select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
     ).all())
-    today = date.today()
+    today = biz_today()
 
     rows = []
     for l in leads:
@@ -499,7 +501,7 @@ def management_insights(session: Session, user: dict[str, Any], start: date, end
 # --------------------------------------------------------------------------- #
 def next_week_pipeline(session: Session, user: dict[str, Any]) -> dict[str, list[dict]]:
     leads = session.scalars(select(Lead).where(_scope(user))).all()
-    today = date.today()
+    today = biz_today()
     fu_next = dict(session.execute(
         select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
     ).all())

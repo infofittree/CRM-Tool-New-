@@ -16,6 +16,7 @@ import streamlit as st
 from app.db import ensure_startup, get_db, render_startup_status
 from app.ui import configure_page, empty_state, page_header, require_login, score_badge, section_header, status_pill
 from database.models import ALLOWED_STATUSES
+from modules.clock import today as biz_today
 from modules.crm_service import CRMService, COUNTRIES, LEAD_SOURCES
 
 
@@ -135,7 +136,7 @@ with db.session_scope() as session:
     paged = filtered.iloc[start : start + page_size]
 
     st.caption(f"Showing {len(paged)} of {len(filtered)} leads")
-    st.download_button("Export Filtered Leads CSV", filtered.to_csv(index=False), file_name=f"leads_{date.today()}.csv", mime="text/csv")
+    st.download_button("Export Filtered Leads CSV", filtered.to_csv(index=False), file_name=f"leads_{biz_today()}.csv", mime="text/csv")
     st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
     st.dataframe(paged, use_container_width=True, hide_index=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -189,8 +190,8 @@ with db.session_scope() as session:
         if new_status == "Lost":
             lost_reason = st.selectbox("Lost Reason * (mandatory)", ["—"] + _lost_reasons)
         next_plan = st.text_input("Next Action Plan *", value=str(detail.get("next_action_plan") or ""))
-        next_fu = st.date_input("Next Follow-up * (max 30 days)", value=date.today() + timedelta(days=2),
-                                max_value=date.today() + timedelta(days=30))
+        next_fu = st.date_input("Next Follow-up * (max 30 days)", value=biz_today() + timedelta(days=2),
+                                max_value=biz_today() + timedelta(days=30))
         new_remarks = st.text_area("Add Notes", value=str(detail.get("remarks") or ""))
         if st.button("Save Updates", use_container_width=True):
             if not next_plan.strip():
@@ -215,7 +216,7 @@ with db.session_scope() as session:
             service.add_quick_followup(
                 selected,
                 {"discussion": "Order closed — won", "next_action": "Move to customer success",
-                 "next_followup": date.today() + timedelta(days=30), "status": "Order Closed"},
+                 "next_followup": biz_today() + timedelta(days=30), "status": "Order Closed"},
                 user,
             )
             clear_data_cache()

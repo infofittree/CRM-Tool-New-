@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from database.models import ActivityLog, EngagementEvent, FollowUp, Lead
 from modules.status_taxonomy import is_open, is_won, to_standard
+from modules.clock import today as biz_today
 
 
 # Raw stored-status groupings (kept for backward-compatible SQL-level counts).
@@ -65,26 +66,29 @@ def get_converted_leads(session: Session, user: dict[str, Any]) -> int:
     return sum(n for status, n in counts.items() if is_won(status))
 
 
+def _latest_followup_per_lead(session: Session, user: dict[str, Any]) -> dict[str, Any]:
+    """Map lead_id -> next_followup from each lead's most recently entered follow-up."""
+    out: dict[str, Any] = {}
+    rows = session.execute(
+        select(FollowUp.lead_id, FollowUp.next_followup)
+        .join(Lead).where(lead_scope(user))
+        .order_by(FollowUp.followup_id.asc())
+    ).all()
+    for lid, nf in rows:
+        out[lid] = nf  # later rows overwrite -> latest decision
+    return out
+
+
 def get_overdue_followups(session: Session, user: dict[str, Any]) -> int:
-    """Count follow-ups whose next date has passed."""
-    today = date.today()
-    return (
-        session.scalar(
-            select(func.count()).select_from(FollowUp).join(Lead).where(lead_scope(user), FollowUp.next_followup < today)
-        )
-        or 0
-    )
+    """Count LEADS whose latest follow-up date has passed."""
+    today = biz_today()
+    return sum(1 for nf in _latest_followup_per_lead(session, user).values() if nf and nf < today)
 
 
 def get_due_today_followups(session: Session, user: dict[str, Any]) -> int:
-    """Count follow-ups due today."""
-    today = date.today()
-    return (
-        session.scalar(
-            select(func.count()).select_from(FollowUp).join(Lead).where(lead_scope(user), FollowUp.next_followup == today)
-        )
-        or 0
-    )
+    """Count LEADS whose latest follow-up is due today."""
+    today = biz_today()
+    return sum(1 for nf in _latest_followup_per_lead(session, user).values() if nf and nf == today)
 
 
 def get_conversion_rate(session: Session, user: dict[str, Any]) -> float:
@@ -106,7 +110,7 @@ def get_leads_dataframe(session: Session, user: dict[str, Any], limit: int = 500
 
 def get_followups_dataframe(session: Session, user: dict[str, Any], horizon_days: int = 30) -> pd.DataFrame:
     """Return live follow-up rows joined to lead context."""
-    max_date = date.today() + timedelta(days=horizon_days)
+    max_date = biz_today() + timedelta(days=horizon_days)
     stmt = (
         select(FollowUp, Lead)
         .join(Lead)
@@ -155,7 +159,7 @@ def get_salesperson_stats(session: Session, user: dict[str, Any]) -> pd.DataFram
     if overdue.empty:
         df["overdue_followups"] = 0
     else:
-        overdue = overdue[overdue["next_followup"].notna() & (overdue["next_followup"] < date.today())]
+        overdue = overdue[overdue["next_followup"].notna() & (overdue["next_followup"] < biz_today())]
         counts = overdue.groupby("assigned_to").size().to_dict()
         df["overdue_followups"] = df["assigned_to"].map(counts).fillna(0).astype(int)
     return df
@@ -163,14 +167,14 @@ def get_salesperson_stats(session: Session, user: dict[str, Any]) -> pd.DataFram
 
 def get_engagement_stats(session: Session, user: dict[str, Any], days: int = 7) -> dict[str, Any]:
     """Engagement events in the last N days, scoped by role, grouped by type & user."""
-    since = datetime.combine(date.today() - timedelta(days=days), datetime.min.time())
+    since = datetime.combine(biz_today() - timedelta(days=days), datetime.min.time())
     stmt = select(EngagementEvent).join(Lead, EngagementEvent.lead_id == Lead.lead_id).where(
         lead_scope(user), EngagementEvent.occurred_at >= since
     )
     by_type: dict[str, int] = {}
     by_user: dict[str, int] = {}
     today_done = 0
-    start_today = datetime.combine(date.today(), datetime.min.time())
+    start_today = datetime.combine(biz_today(), datetime.min.time())
     total = 0
     for ev in session.scalars(stmt):
         total += 1
