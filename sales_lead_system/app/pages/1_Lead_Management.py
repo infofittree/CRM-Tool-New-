@@ -31,10 +31,15 @@ if startup_status.errors:
     st.error(startup_status.errors[0])
     st.stop()
 from app.db import load_leads_df, clear_data_cache
+from modules.dashboard_queries import _latest_followup_per_lead
 with db.session_scope() as session:
     service = CRMService(session)
-    leads = load_leads_df(user["role"], user["full_name"], 1000)
+    leads = load_leads_df(user["role"], user["full_name"], 1000).copy()  # copy: don't mutate cache
     salespersons = service.get_salespersons()
+    # Join each lead's latest Next Follow-up date so salespeople can see/verify it
+    if not leads.empty and "lead_id" in leads.columns:
+        _fu_map = _latest_followup_per_lead(session, user)
+        leads["next_followup"] = leads["lead_id"].map(_fu_map)
 
     with st.expander("Add Lead", expanded=False):
         with st.form("add_lead_form", clear_on_submit=True):
@@ -127,7 +132,7 @@ with db.session_scope() as session:
 
     # Surface score columns first for visibility
     if "lead_score" in filtered.columns:
-        front = [c for c in ["lead_id", "company_name", "lead_score", "band", "standard_status", "assigned_to", "country"] if c in filtered.columns]
+        front = [c for c in ["lead_id", "company_name", "lead_score", "band", "standard_status", "next_followup", "assigned_to", "country"] if c in filtered.columns]
         rest = [c for c in filtered.columns if c not in front]
         filtered = filtered[front + rest]
 
@@ -156,6 +161,7 @@ with db.session_scope() as session:
                 <div class="crm-section-subtitle">{detail.get('lead_id')} | {detail.get('assigned_to') or 'Unassigned'}</div>
                 <p><b>Score</b> {score_badge(detail.get('lead_score'), detail.get('band'))}</p>
                 <p><b>Status</b> {status_pill(detail.get('standard_status') or detail.get('status'))}</p>
+                <p><b>Next Follow-up</b> {detail.get('next_followup') or '— none set —'}</p>
                 <p><b>Contact</b> {detail.get('contact_person') or '-'} | {detail.get('phone') or '-'}</p>
                 <p><b>Email</b> {detail.get('email') or '-'}</p>
                 <p><b>Country</b> {detail.get('country') or '-'}</p>
@@ -193,8 +199,14 @@ with db.session_scope() as session:
         if new_status == "Lost":
             lost_reason = st.selectbox("Lost Reason * (mandatory)", ["—"] + _lost_reasons)
         next_plan = st.text_input("Next Action Plan *", value=str(detail.get("next_action_plan") or ""))
-        next_fu = st.date_input("Next Follow-up * (max 30 days)", value=biz_today() + timedelta(days=2),
-                                max_value=biz_today() + timedelta(days=30))
+        _maxfu = biz_today() + timedelta(days=30)
+        try:
+            _curfu = pd.to_datetime(detail.get("next_followup")).date()
+        except Exception:
+            _curfu = None
+        _default_fu = _curfu if (_curfu and _curfu <= _maxfu) else biz_today() + timedelta(days=2)
+        next_fu = st.date_input("Next Follow-up * (max 30 days) — fix it here if wrong",
+                                value=_default_fu, max_value=_maxfu)
         new_remarks = st.text_area("Add Notes", value=str(detail.get("remarks") or ""))
         if st.button("Save Updates", use_container_width=True):
             _is_lost = new_status == "Lost"
