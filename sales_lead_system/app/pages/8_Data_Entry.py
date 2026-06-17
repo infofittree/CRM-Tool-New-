@@ -99,11 +99,13 @@ with db.session_scope() as session:
             engagement = c7.selectbox("Buyer Engagement *", ENGAGEMENT,
                                       help="How often the buyer communicates with us")
             assigned_to = c8.selectbox("Owner / Salesperson *", salespersons)
-            next_follow_up = c9.date_input("Follow-up Date * (max 30 days)",
+            inquiry_date = c9.date_input("Inquiry Date (when buyer enquired)",
+                                         value=biz_today(), max_value=biz_today())
+            next_follow_up = c7.date_input("Follow-up Date * (max 30 days)",
                                            value=biz_today() + timedelta(days=2),
                                            min_value=biz_today() - timedelta(days=1),
                                            max_value=MAX_FU)
-            lost_reason = c7.selectbox("Lost Reason (only if Lost)", ["—"] + LOST_REASONS)
+            lost_reason = c8.selectbox("Lost Reason (only if Lost)", ["—"] + LOST_REASONS)
 
             next_action_plan = st.text_input("Next Action Plan *",
                                              placeholder="e.g. Call buyer for quotation feedback")
@@ -125,6 +127,7 @@ with db.session_scope() as session:
                 "buyer_engagement_frequency": engagement, "assigned_to": assigned_to,
                 "next_follow_up": next_follow_up, "next_action_plan": next_action_plan,
                 "lost_reason": None if lost_reason == "—" else lost_reason,
+                "inquiry_date": inquiry_date,
                 "website": website, "remarks": notes,
             }
             with st.spinner("Validating & saving..."):
