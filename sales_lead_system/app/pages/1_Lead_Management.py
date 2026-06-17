@@ -88,12 +88,13 @@ with db.session_scope() as session:
     if "lead_score" in leads.columns:
         leads["band"] = leads["lead_score"].map(_band)
 
-    filter_col1, filter_col2, filter_col3, filter_col4, filter_col5 = st.columns(5)
+    filter_col1, filter_col2, filter_col3, filter_col4, filter_col5, filter_col6 = st.columns(6)
     query = filter_col1.text_input("Search")
     status_filter = filter_col2.multiselect("Status", list(ALLOWED_STATUSES))
     salesperson_filter = filter_col3.multiselect("Salesperson", sorted(leads["assigned_to"].dropna().unique()))
     country_filter = filter_col4.multiselect("Country", sorted(leads["country"].dropna().unique()))
-    band_filter = filter_col5.multiselect("Score Band", ["HOT", "WARM", "NURTURE", "COLD"])
+    continent_filter = filter_col5.multiselect("Continent", sorted(leads["continent"].dropna().unique()) if "continent" in leads.columns else [])
+    band_filter = filter_col6.multiselect("Score Band", ["HOT", "WARM", "NURTURE", "COLD"])
 
     sort_choice = st.radio(
         "Sort", ["Highest score first", "Lowest score first", "Most recent"], horizontal=True
@@ -109,6 +110,8 @@ with db.session_scope() as session:
         filtered = filtered[filtered["assigned_to"].isin(salesperson_filter)]
     if country_filter:
         filtered = filtered[filtered["country"].isin(country_filter)]
+    if continent_filter and "continent" in filtered.columns:
+        filtered = filtered[filtered["continent"].isin(continent_filter)]
     if band_filter and "band" in filtered.columns:
         filtered = filtered[filtered["band"].isin(band_filter)]
 
@@ -257,4 +260,49 @@ with db.session_scope() as session:
                 st.rerun()
             if dc2.button("Cancel", use_container_width=True, key=f"delno_{selected}"):
                 st.session_state.pop(f"confirm_del_{selected}", None)
+                st.rerun()
+
+    # ====== SEPARATE FULL EDIT-LEAD FORM (4.1) — independent of the panel above ======
+    from modules.dropdown_config import option_list as _opt
+    _CONTINENTS = _opt("continents")
+    section_header("✏️ Edit Lead Details", "Correct any field on the selected lead. Every change is audit-logged.")
+    with st.expander(f"Edit all details for {detail.get('company_name') or detail.get('contact_person') or selected}"):
+        with st.form(f"edit_lead_full_{selected}"):
+            e1, e2, e3 = st.columns(3)
+            e_contact = e1.text_input("Contact Person", value=str(detail.get("contact_person") or ""))
+            e_company = e2.text_input("Company Name", value=str(detail.get("company_name") or ""))
+            e_email = e3.text_input("Email", value=str(detail.get("email") or ""))
+            e_phone = e1.text_input("Phone", value=str(detail.get("phone") or ""))
+            _co = str(detail.get("country") or "")
+            e_country = e2.selectbox("Country", COUNTRIES, index=COUNTRIES.index(_co) if _co in COUNTRIES else 0)
+            _cont = str(detail.get("continent") or "")
+            e_continent = e3.selectbox("Continent (auto from country if blank)", ["(auto)"] + _CONTINENTS,
+                                       index=(_CONTINENTS.index(_cont) + 1) if _cont in _CONTINENTS else 0)
+            e_industry = e1.text_input("Industry", value=str(detail.get("industry") or ""))
+            _src = str(detail.get("lead_source") or "")
+            e_source = e2.selectbox("Lead Source", LEAD_SOURCES, index=LEAD_SOURCES.index(_src) if _src in LEAD_SOURCES else 0)
+            _stl = list(ALLOWED_STATUSES)
+            e_status = e3.selectbox("Lead Status", _stl, index=_stl.index(detail.get("status")) if detail.get("status") in _stl else 0)
+            e_website = e1.text_input("Website", value=str(detail.get("website") or ""))
+            e_address = st.text_input("Address", value=str(detail.get("address") or ""))
+            e_notes = st.text_area("Notes", value=str(detail.get("remarks") or ""))
+            edit_submitted = st.form_submit_button("💾 Save Edits", use_container_width=True)
+        if edit_submitted:
+            payload = {
+                "contact_person": e_contact, "company_name": e_company, "email": e_email,
+                "phone": e_phone, "country": e_country, "industry": e_industry,
+                "lead_source": e_source, "status": e_status, "website": e_website,
+                "address": e_address, "remarks": e_notes,
+            }
+            if e_continent != "(auto)":
+                payload["continent"] = e_continent
+            if e_email and not __import__("re").match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", e_email):
+                st.error("Invalid email format.")
+            else:
+                changes = service.edit_lead_fields(selected, payload, user)
+                clear_data_cache()
+                if changes:
+                    st.success("Updated:\n- " + "\n- ".join(changes))
+                else:
+                    st.info("No changes to save.")
                 st.rerun()

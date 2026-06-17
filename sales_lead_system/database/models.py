@@ -84,6 +84,7 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     first_contact_date: Mapped[date | None] = mapped_column(Date)
     sheet_source: Mapped[str | None] = mapped_column(String(50))  # Buyer_Master | Alibaba
     # Phase 4 — new 10-stage funnel (2026-06-02 restructure)
+    address: Mapped[str | None] = mapped_column(Text)                      # full postal address
     lead_category: Mapped[str | None] = mapped_column(String(5))           # A / B / C
     buyer_engagement_frequency: Mapped[str | None] = mapped_column(String(20))  # Frequent / Medium / Low
     next_action_plan: Mapped[str | None] = mapped_column(Text)             # mandatory for new leads

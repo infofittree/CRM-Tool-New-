@@ -310,6 +310,51 @@ class CRMService:
         self.activity.log_activity(self.session, "DELETE_LEAD", user["full_name"], lead_id, remarks=reason)
         return True
 
+    # Fields the separate Edit-Lead form may change (4.1).
+    EDITABLE_FIELDS = (
+        "contact_person", "company_name", "email", "phone", "country", "continent",
+        "industry", "lead_source", "status", "remarks", "website", "address",
+    )
+
+    def edit_lead_fields(self, lead_id: str, new_values: dict[str, Any], user: dict) -> list[str]:
+        """4.1: update lead fields with a before/after audit trail. Returns change list."""
+        from modules.geo import normalize_country, country_continent, normalize_source
+        lead = self.session.get(Lead, lead_id)
+        if lead is None:
+            return []
+        # Normalize geo/source so derived data stays consistent
+        if new_values.get("country"):
+            new_values["country"] = normalize_country(new_values["country"])
+            new_values["continent"] = country_continent(new_values["country"]) or new_values.get("continent")
+        if new_values.get("lead_source"):
+            new_values["lead_source"] = normalize_source(new_values["lead_source"])
+        if new_values.get("company_name") is not None:
+            new_values["company_name"] = str(new_values["company_name"]).strip().upper() or None
+
+        changes: list[str] = []
+        for field in self.EDITABLE_FIELDS:
+            if field not in new_values:
+                continue
+            old = getattr(lead, field, None)
+            new = new_values[field]
+            new = (new.strip() if isinstance(new, str) else new) or None
+            if str(old or "") != str(new or ""):
+                setattr(lead, field, new)
+                changes.append(f"{field}: '{old or '—'}' → '{new or '—'}'")
+                self.session.add(EngagementEvent(
+                    lead_id=lead_id, user_name=user["full_name"], event_type="field_edit",
+                    notes=f"{field}: {old or '—'} -> {new or '—'}",
+                ))
+        if changes:
+            # recompute score if status changed
+            if any(c.startswith("status:") for c in changes):
+                from modules.lead_scoring import score_lead
+                lead.lead_score = score_lead({c.name: getattr(lead, c.name) for c in Lead.__table__.columns})[0]
+            self.activity.log_activity(
+                self.session, "EDIT_LEAD", user["full_name"], lead_id, remarks="; ".join(changes)[:1000],
+            )
+        return changes
+
     def transfer_lead(self, lead_id: str, new_owner: str, user: dict, reason: str | None = None) -> bool:
         """Phase 4: reassign a lead to another salesperson and record the transfer."""
         from database.models import LeadTransfer
@@ -366,6 +411,60 @@ class CRMService:
     def create_user(self, username: str, password: str, full_name: str, role: str) -> None:
         """Create a CRM user."""
         self.session.add(User(username=username, password_hash=hash_password(password), full_name=full_name, role=role, is_active=True))
+
+    def user_workload(self, full_name: str) -> dict[str, int]:
+        """Count active leads (and open follow-ups) owned by a user — for delete preview."""
+        from sqlalchemy import func
+        leads_n = self.session.scalar(
+            select(func.count()).select_from(Lead).where(
+                func.lower(func.trim(Lead.assigned_to)) == (full_name or "").strip().lower(),
+                Lead.deleted_at.is_(None),
+            )
+        ) or 0
+        return {"leads": int(leads_n)}
+
+    def delete_user(self, username: str, actor: dict, mode: str = "transfer",
+                    transfer_to: str | None = None) -> tuple[bool, str]:
+        """Delete a user (soft) after reassigning or unassigning their leads.
+
+        mode='transfer' -> move their leads to transfer_to; mode='unassign' -> clear owner.
+        Returns (ok, message). Guards: can't delete self or the last active admin.
+        """
+        from sqlalchemy import func
+        target = self.session.scalar(select(User).where(User.username == username))
+        if target is None:
+            return False, "User not found."
+        if target.username == actor.get("username"):
+            return False, "You cannot delete your own account."
+        if target.role == "Admin":
+            admin_count = self.session.scalar(
+                select(func.count()).select_from(User).where(User.role == "Admin", User.is_active.is_(True))
+            ) or 0
+            if admin_count <= 1:
+                return False, "Cannot delete the last active Admin."
+
+        owner = target.full_name or target.username
+        leads = self.session.scalars(
+            select(Lead).where(func.lower(func.trim(Lead.assigned_to)) == owner.strip().lower(), Lead.deleted_at.is_(None))
+        ).all()
+        if mode == "transfer":
+            if not transfer_to:
+                return False, "Choose a user to transfer leads to."
+            for l in leads:
+                l.assigned_to = transfer_to
+        else:  # unassign
+            for l in leads:
+                l.assigned_to = None
+
+        target.is_active = False
+        from datetime import datetime
+        target.deleted_at = datetime.utcnow()
+        self.activity.log_activity(
+            self.session, "DELETE_USER", actor["full_name"], None,
+            remarks=f"Deleted user '{username}' ({len(leads)} leads {mode}"
+                    + (f"->{transfer_to}" if mode == 'transfer' else " unassigned") + ")",
+        )
+        return True, f"User '{username}' deleted; {len(leads)} leads {mode}{(' to ' + transfer_to) if mode=='transfer' else 'ed'}."
 
     _MAX_FOLLOWUP_DAYS = 30
     _CANONICAL_STATUSES = {

@@ -49,6 +49,48 @@ with db.session_scope() as session:
         st.dataframe([{"username": u.username, "full_name": u.full_name, "role": u.role, "active": u.is_active} for u in users], use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # ---- Delete User (Admin only) ----
+        section_header("Delete User", "Admin only. Reassign or unassign their leads first.")
+        if user["role"] != "Admin":
+            st.info("Only Admins can delete users.")
+        else:
+            active_users = [u for u in users if u.is_active and u.username != user["username"]]
+            if not active_users:
+                st.caption("No other active users to delete.")
+            else:
+                del_username = st.selectbox("User to delete", [u.username for u in active_users])
+                target = next(u for u in active_users if u.username == del_username)
+                workload = service.user_workload(target.full_name or target.username)
+                st.warning(f"**{del_username}** ({target.role}) currently owns **{workload['leads']} leads**.")
+                mode = st.radio("What to do with their leads?",
+                                ["Transfer to another user", "Unassign (clear owner)"], horizontal=True)
+                transfer_to = None
+                if mode.startswith("Transfer"):
+                    others = [u.full_name or u.username for u in active_users if u.username != del_username]
+                    transfer_to = st.selectbox("Transfer leads to", others) if others else None
+                if not st.session_state.get(f"confirm_deluser_{del_username}"):
+                    if st.button("🗑️ Delete User", key=f"duser_{del_username}"):
+                        st.session_state[f"confirm_deluser_{del_username}"] = True
+                        st.rerun()
+                else:
+                    st.error(f"Confirm deletion of '{del_username}'? This is logged and reversible (account is deactivated).")
+                    cc1, cc2 = st.columns(2)
+                    if cc1.button("Yes, delete user", key=f"duyes_{del_username}"):
+                        ok, msg = service.delete_user(
+                            del_username, user,
+                            mode="transfer" if mode.startswith("Transfer") else "unassign",
+                            transfer_to=transfer_to,
+                        )
+                        st.session_state.pop(f"confirm_deluser_{del_username}", None)
+                        from app.db import clear_data_cache
+                        clear_data_cache()
+                        (st.success if ok else st.error)(msg)
+                        if ok:
+                            st.rerun()
+                    if cc2.button("Cancel", key=f"duno_{del_username}"):
+                        st.session_state.pop(f"confirm_deluser_{del_username}", None)
+                        st.rerun()
+
     with tabs[1]:
         section_header("Allowed Statuses", "Canonical lead stages used across imports and dashboard charts.")
         st.code(json.dumps(list(ALLOWED_STATUSES), indent=2))
