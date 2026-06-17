@@ -65,8 +65,9 @@ def _dt_end(d: date) -> datetime:
 def _scope(user: dict[str, Any]):
     base = Lead.deleted_at.is_(None)
     if user.get("role") == "Salesperson":
-        from sqlalchemy import and_
-        return and_(base, Lead.assigned_to == user.get("full_name"))
+        from sqlalchemy import and_, func
+        name = (user.get("full_name") or "").strip().lower()
+        return and_(base, func.lower(func.trim(Lead.assigned_to)) == name)
     return base
 
 

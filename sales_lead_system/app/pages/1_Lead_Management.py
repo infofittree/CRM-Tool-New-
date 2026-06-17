@@ -194,12 +194,13 @@ with db.session_scope() as session:
                                 max_value=biz_today() + timedelta(days=30))
         new_remarks = st.text_area("Add Notes", value=str(detail.get("remarks") or ""))
         if st.button("Save Updates", use_container_width=True):
-            if not next_plan.strip():
-                st.error("Next Action Plan is mandatory.")
+            _is_lost = new_status == "Lost"
+            if _is_lost and lost_reason == "—":
+                st.error("Lost Reason is mandatory when marking a lead as Lost.")
+            elif not _is_lost and not next_plan.strip():
+                st.error("Next Action Plan is mandatory.")  # not required for Lost (Phase 5)
             elif new_category == "— select —":
                 st.error("Lead Category (A/B/C) is mandatory.")
-            elif new_status == "Lost" and lost_reason == "—":
-                st.error("Lost Reason is mandatory when marking a lead as Lost.")
             else:
                 service.update_lead_full(
                     selected,

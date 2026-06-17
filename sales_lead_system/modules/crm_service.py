@@ -376,6 +376,7 @@ class CRMService:
     _LOST_REASONS = {
         "Price Too High", "Existing Supplier", "Product Not Available",
         "Price Issues", "Certification Concern", "Imported Locally", "Quality Concern",
+        "Not Replying",
     }
 
     def _validate_entry(self, payload: dict[str, Any]) -> list[str]:
@@ -393,26 +394,28 @@ class CRMService:
         status = payload.get("status", "")
         if status and status not in self._CANONICAL_STATUSES:
             errors.append(f"Invalid status '{status}'. Must be one of: {', '.join(sorted(self._CANONICAL_STATUSES))}")
-        # Follow-up date — MANDATORY and max 30 days
-        fu_date = payload.get("next_follow_up") or payload.get("follow_up_date")
-        if not fu_date:
-            errors.append("Follow-up date is mandatory — no lead can be saved without one.")
-        else:
-            try:
-                if isinstance(fu_date, str):
-                    fu_date = date.fromisoformat(str(fu_date)[:10])
-                if hasattr(fu_date, 'date'):  # datetime → date
-                    fu_date = fu_date.date()
-                days_ahead = (fu_date - biz_today()).days
-                if days_ahead > self._MAX_FOLLOWUP_DAYS:
-                    errors.append(f"Follow-up date cannot exceed {self._MAX_FOLLOWUP_DAYS} days from today. Set a closer date.")
-                elif days_ahead < -180:
-                    errors.append("Follow-up date appears too far in the past. Please enter today or a future date.")
-            except (ValueError, TypeError, AttributeError):
-                errors.append("Follow-up date format is invalid.")
-        # Next Action Plan — MANDATORY
-        if not str(payload.get("next_action_plan") or "").strip():
-            errors.append("Next Action Plan is mandatory — explain what will be done on the follow-up.")
+        is_lost = status == "Lost"
+        # Follow-up date + action plan are NOT required for Lost leads (Phase 5).
+        if not is_lost:
+            fu_date = payload.get("next_follow_up") or payload.get("follow_up_date")
+            if not fu_date:
+                errors.append("Follow-up date is mandatory — no lead can be saved without one.")
+            else:
+                try:
+                    if isinstance(fu_date, str):
+                        fu_date = date.fromisoformat(str(fu_date)[:10])
+                    if hasattr(fu_date, 'date'):  # datetime → date
+                        fu_date = fu_date.date()
+                    days_ahead = (fu_date - biz_today()).days
+                    if days_ahead > self._MAX_FOLLOWUP_DAYS:
+                        errors.append(f"Follow-up date cannot exceed {self._MAX_FOLLOWUP_DAYS} days from today. Set a closer date.")
+                    elif days_ahead < -180:
+                        errors.append("Follow-up date appears too far in the past. Please enter today or a future date.")
+                except (ValueError, TypeError, AttributeError):
+                    errors.append("Follow-up date format is invalid.")
+            # Next Action Plan — MANDATORY (except for Lost)
+            if not str(payload.get("next_action_plan") or "").strip():
+                errors.append("Next Action Plan is mandatory — explain what will be done on the follow-up.")
         # Lead Category — MANDATORY (A/B/C, manual decision, no auto-default)
         cat = str(payload.get("lead_category") or "").strip().upper()
         if not cat:

@@ -37,10 +37,16 @@ def _standard_counts(session: Session, user: dict[str, Any]) -> dict[str, int]:
 
 
 def lead_scope(user: dict[str, Any]):
-    """Return the standard role-aware lead filter."""
+    """Return the standard role-aware lead filter.
+
+    Salesperson sees only their assigned leads; match is case/space-insensitive so
+    'RAHUL' (lead) matches 'Rahul' (account) and a stray space never hides data.
+    Admin and Manager see all.
+    """
     base = Lead.deleted_at.is_(None)
     if user.get("role") == "Salesperson":
-        return and_(base, Lead.assigned_to == user.get("full_name"))
+        name = (user.get("full_name") or "").strip().lower()
+        return and_(base, func.lower(func.trim(Lead.assigned_to)) == name)
     return base
 
 

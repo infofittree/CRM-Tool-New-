@@ -36,6 +36,7 @@ DEFAULT_OPTIONS: dict[str, list[str]] = {
         "Certification Concern",
         "Imported Locally",
         "Quality Concern",
+        "Not Replying",
     ],
     "lead_categories": ["A", "B", "C"],
     "engagement_frequency": ["Frequent", "Medium", "Low"],
@@ -59,12 +60,20 @@ DEFAULT_OPTIONS: dict[str, list[str]] = {
 
 def load_dropdown_options() -> dict[str, list[str]]:
     """Load dropdown options with safe defaults."""
+    # Code-controlled lists — the JSON (or a stale sheet sync) must NEVER override
+    # these. Keeps the funnel, lost reasons, categories, sources, etc. authoritative.
+    _CODE_CONTROLLED = {
+        "lead_statuses", "lost_reasons", "lead_categories",
+        "engagement_frequency", "lead_sources", "continents",
+    }
     if not DROPDOWN_CONFIG_PATH.exists():
         return DEFAULT_OPTIONS.copy()
     with DROPDOWN_CONFIG_PATH.open("r", encoding="utf-8") as handle:
         loaded = json.load(handle)
     merged = DEFAULT_OPTIONS.copy()
     for key, values in loaded.items():
+        if key in _CODE_CONTROLLED:
+            continue  # always use the code default for these
         if isinstance(values, list):
             merged[key] = [str(value) for value in values if str(value).strip()]
     return merged

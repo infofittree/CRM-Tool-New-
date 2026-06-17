@@ -322,6 +322,19 @@ p, label, .stCaptionContainer, [data-testid="stMarkdownContainer"] {
 .crm-task.task-cold { border-left-color: #38bdf8; }
 .crm-task-head { display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
 .crm-task-company { color: var(--crm-text); font-weight: 820; font-size: 1rem; }
+
+/* Larger workspace cards (1.4) with a contact-details grid (1.2) */
+.crm-task-lg { padding: 1.15rem 1.3rem; margin-bottom: .6rem; border-left-width: 6px; }
+.crm-task-lg .crm-task-company { font-size: 1.18rem; }
+.crm-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .25rem 1.5rem;
+  margin: .55rem 0 .35rem 0;
+  color: var(--crm-text);
+  font-size: .9rem;
+}
+@media (max-width: 900px) { .crm-contact-grid { grid-template-columns: 1fr; } }
 .crm-task-meta { color: var(--crm-muted); font-size: .82rem; margin-top: .25rem; }
 .crm-task-action { color: var(--crm-primary); font-weight: 760; font-size: .86rem; }
 .crm-task-reason { color: var(--crm-text); font-size: .84rem; margin-top: .2rem; }
