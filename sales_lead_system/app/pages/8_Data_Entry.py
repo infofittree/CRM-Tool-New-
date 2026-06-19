@@ -78,7 +78,8 @@ with db.session_scope() as session:
         _cat_default = CATEGORIES.index(suggested_cat) if suggested_cat in CATEGORIES else 0
 
         with st.form("fast_lead", clear_on_submit=True):
-            st.caption("Fields marked * are mandatory. The CRM will block save without them.")
+            st.caption("Only fields marked * are mandatory. Phone, Email and Company are optional "
+                       "(e.g. Alibaba leads can be saved with no phone/email).")
             c1, c2, c3 = st.columns(3)
             company_name = c1.text_input("Company Name (optional)")
             contact_person = c2.text_input("Contact Person *")
