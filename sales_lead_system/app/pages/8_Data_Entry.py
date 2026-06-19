@@ -69,8 +69,8 @@ with db.session_scope() as session:
         alibaba_level = None
         suggested_cat = None
         if lead_source == "Alibaba":
-            alibaba_level = sc2.selectbox("Alibaba Buyer Level *", ["L1", "L2", "L3", "L4"], key="de_alibaba",
-                                          help="L4/L3 = strong → A · L2 = medium → B · L1 = low → C")
+            alibaba_level = sc2.selectbox("Alibaba Buyer Level *", ["NEW", "L1", "L2", "L3", "L4"], key="de_alibaba",
+                                          help="NEW = just enquired · L4/L3 = strong → A · L2 = medium → B · L1 = low → C")
             suggested_cat = suggest_category_from_alibaba_level(alibaba_level)
             if suggested_cat:
                 sc2.caption(f"💡 Suggested category: **{suggested_cat}** (you can override below)")
@@ -83,8 +83,8 @@ with db.session_scope() as session:
             company_name = c1.text_input("Company Name (optional)")
             contact_person = c2.text_input("Contact Person *")
             country = c3.selectbox("Country *", COUNTRIES)
-            phone = c1.text_input("Contact Number * (phone or email)")
-            email = c2.text_input("Email * (phone or email)")
+            phone = c1.text_input("Contact Number (optional)")
+            email = c2.text_input("Email (optional)")
             product_interest = c3.text_input("Product Requirement")
             # Continent auto-fills from country — shown read-only for confidence
             c3.caption(f"🌍 Continent (auto): {country_continent(country) or '—'}")

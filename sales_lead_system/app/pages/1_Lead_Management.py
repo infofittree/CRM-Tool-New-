@@ -186,7 +186,7 @@ with db.session_scope() as session:
         # Alibaba Buyer Level — only for Alibaba-source leads
         new_level = None
         if str(detail.get("lead_source") or "").strip().lower() == "alibaba":
-            _lvls = ["— none —", "L1", "L2", "L3", "L4"]
+            _lvls = ["— none —", "NEW", "L1", "L2", "L3", "L4"]
             _cur_lvl = str(detail.get("buyer_tag") or "").strip().upper()
             _lvl_idx = _lvls.index(_cur_lvl) if _cur_lvl in _lvls else 0
             new_level = st.selectbox("Alibaba Buyer Level", _lvls, index=_lvl_idx)

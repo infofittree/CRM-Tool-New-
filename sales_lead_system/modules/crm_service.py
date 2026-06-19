@@ -481,14 +481,11 @@ class CRMService:
     def _validate_entry(self, payload: dict[str, Any]) -> list[str]:
         from datetime import timedelta
         errors = []
-        # Required core fields (company name is OPTIONAL — Phase 6)
+        # Required core fields (company name, phone, and email are all OPTIONAL)
         for field in ("contact_person", "status", "assigned_to", "country"):
             if not payload.get(field):
                 label = field.replace("_", " ").title()
                 errors.append(f"{label} is required")
-        # Phone OR Email is required (at least one way to reach the buyer)
-        if not str(payload.get("phone") or "").strip() and not str(payload.get("email") or "").strip():
-            errors.append("Provide at least a Phone number or an Email.")
         # Status must be canonical
         status = payload.get("status", "")
         if status and status not in self._CANONICAL_STATUSES:
