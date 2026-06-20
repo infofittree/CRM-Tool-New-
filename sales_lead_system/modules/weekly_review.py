@@ -84,6 +84,40 @@ def _as_date(value: Any) -> date | None:
         return None
 
 
+def _group_by_owner(leads: list[Lead]) -> tuple[dict[str, list[Lead]], dict[str, str]]:
+    """Group leads by a case/space-insensitive owner key so 'Rahul' and 'RAHUL'
+    are one person. Returns (groups keyed by canonical key, display-name map).
+
+    The display name is the most common original spelling for that owner, matching
+    how the rest of the CRM treats owners (lower+trim) and avoiding duplicate
+    leaderboard rows for the same human.
+    """
+    groups: dict[str, list[Lead]] = defaultdict(list)
+    spellings: dict[str, Counter] = defaultdict(Counter)
+    for l in leads:
+        raw = (l.assigned_to or "Unassigned").strip()
+        key = raw.lower()
+        groups[key].append(l)
+        spellings[key][raw] += 1
+    display = {k: c.most_common(1)[0][0] for k, c in spellings.items()}
+    return groups, display
+
+
+def _latest_followup_map(session: Session, scope=None) -> dict[str, Any]:
+    """Map lead_id -> next_followup taken from each lead's most recently ENTERED
+    follow-up (ordered by followup_id), matching dashboard_queries and the task
+    engine. This deliberately does NOT use max(next_followup) so a salesperson who
+    corrects a wrongly-future date is honoured everywhere consistently.
+    """
+    stmt = select(FollowUp.lead_id, FollowUp.next_followup).order_by(FollowUp.followup_id.asc())
+    if scope is not None:
+        stmt = stmt.join(Lead).where(scope)
+    out: dict[str, Any] = {}
+    for lid, nf in session.execute(stmt).all():
+        out[lid] = nf  # later (higher followup_id) rows overwrite -> latest decision
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Raw weekly activity collection (shared by all sections)
 # --------------------------------------------------------------------------- #
@@ -129,7 +163,15 @@ def _collect_week_activity(session: Session, lead_ids: set[str], start: date, en
 
 
 def _classify_activity_counts(activities: list[dict]) -> dict[str, int]:
-    """Count real work only — engagement events + dated follow-ups. Audit ignored."""
+    """Count real work only, counting each action exactly once.
+
+    The FollowUp table is the single source of truth for a contact action and its
+    channel (mode). Every quick follow-up also writes a mirror engagement_event
+    (call/whatsapp/email/meeting/followup) for the dashboard's live panels — those
+    mirrors must NOT be counted here or each action is double-counted. From
+    engagement_events we therefore count only standalone signals (note/reply/
+    inbound) that have no FollowUp row. Audit rows are never counted.
+    """
     counts = {"calls": 0, "whatsapp": 0, "emails": 0, "meetings": 0, "notes": 0, "followups": 0, "total": 0}
     for a in activities:
         if a["source"] == "audit":
@@ -147,22 +189,13 @@ def _classify_activity_counts(activities: list[dict]) -> dict[str, int]:
             elif "meeting" in t:
                 counts["meetings"] += 1
             continue
-        # engagement events
-        if t in _CALL or "call" in t:
-            counts["calls"] += 1
-        elif t in _WHATSAPP or "whatsapp" in t:
-            counts["whatsapp"] += 1
-        elif t in _EMAIL or "email" in t:
-            counts["emails"] += 1
-        elif t in _MEETING or "meeting" in t:
-            counts["meetings"] += 1
-        elif t in _NOTE or "note" in t:
+        # engagement events: only count standalone signals, never the call/whatsapp/
+        # email/meeting/followup mirrors of a FollowUp row (avoids double counting).
+        if t in _NOTE or "note" in t or t in ("reply", "inbound"):
             counts["notes"] += 1
-        elif t in _FOLLOWUP:
-            counts["followups"] += 1
-        else:
-            continue  # status_change / reschedule etc. — not a contact
-        counts["total"] += 1
+            counts["total"] += 1
+        # everything else (call/whatsapp/email/meeting/followup mirror,
+        # status_change, category_change, field_edit) — not counted here.
     return counts
 
 
@@ -192,12 +225,9 @@ def weekly_overview(session: Session, user: dict[str, Any], start: date, end: da
         statuses[std] += 1
         bands[band_for_score(float(l.lead_score or 0))] += 1
 
-    # Pending / overdue follow-ups from followups table
-    fu_next = dict(
-        session.execute(
-            select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
-        ).all()
-    )
+    # Pending / overdue follow-ups — latest-ENTERED follow-up per lead (consistent
+    # with the dashboard and task engine; not max()).
+    fu_next = _latest_followup_map(session, _scope(user))
     for lid, nxt in fu_next.items():
         if lid not in lead_ids:
             continue
@@ -278,20 +308,18 @@ def overview_with_trend(session: Session, user: dict[str, Any], start: date, end
 # --------------------------------------------------------------------------- #
 def salesperson_performance(session: Session, start: date, end: date) -> list[dict[str, Any]]:
     leads = session.scalars(select(Lead).where(Lead.deleted_at.is_(None))).all()
-    by_person_leads: dict[str, list[Lead]] = defaultdict(list)
-    for l in leads:
-        by_person_leads[l.assigned_to or "Unassigned"].append(l)
+    # Group case/space-insensitively so 'Rahul' and 'RAHUL' are one person, not two
+    # leaderboard rows.
+    by_person_leads, owner_display = _group_by_owner(leads)
     lead_ids = {l.lead_id for l in leads}
     acts = _collect_week_activity(session, lead_ids, start, end)
-    lead_owner = {l.lead_id: (l.assigned_to or "Unassigned") for l in leads}
 
     today = biz_today()
-    fu_next = dict(session.execute(
-        select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
-    ).all())
+    fu_next = _latest_followup_map(session)
 
     rows = []
-    for person, pleads in by_person_leads.items():
+    for key, pleads in by_person_leads.items():
+        person = owner_display.get(key, key)
         pls = {l.lead_id for l in pleads}
         worked = set()
         agg = Counter()
@@ -336,9 +364,7 @@ def company_activity(session: Session, user: dict[str, Any], start: date, end: d
     leads = session.scalars(select(Lead).where(_scope(user))).all()
     lead_ids = {l.lead_id for l in leads}
     acts = _collect_week_activity(session, lead_ids, start, end)
-    fu_next = dict(session.execute(
-        select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
-    ).all())
+    fu_next = _latest_followup_map(session, _scope(user))
     today = biz_today()
 
     rows = []
@@ -413,32 +439,61 @@ def company_timeline(session: Session, lead_id: str, start: date, end: date) -> 
 # --------------------------------------------------------------------------- #
 # Section 5 — Lost opportunity analysis
 # --------------------------------------------------------------------------- #
-def lost_analysis(session: Session, user: dict[str, Any]) -> dict[str, Any]:
-    leads = session.scalars(select(Lead).where(_scope(user))).all()
+def lost_analysis(session: Session, user: dict[str, Any],
+                  start: date | None = None, end: date | None = None) -> dict[str, Any]:
+    """Loss analysis. When start/end are given, only leads that transitioned to a
+    Lost status WITHIN that week (via a status_change event) are included, so the
+    figures match the selected week instead of all-time. Without a window it falls
+    back to all currently-lost leads in scope.
+    """
+    leads = {l.lead_id: l for l in session.scalars(select(Lead).where(_scope(user))).all()}
+    scoped_ids = set(leads)
+    _, owner_display = _group_by_owner(list(leads.values()))
+
+    if start is not None and end is not None:
+        # Leads that became Lost this week, from status_change events in the window.
+        s, e = _dt_start(start), _dt_end(end)
+        lost_ids: list[str] = []
+        seen: set[str] = set()
+        for ev in session.scalars(select(EngagementEvent).where(
+            EngagementEvent.event_type == "status_change",
+            EngagementEvent.occurred_at >= s, EngagementEvent.occurred_at <= e,
+        )):
+            if ev.lead_id not in scoped_ids or ev.lead_id in seen:
+                continue
+            new = (ev.notes or "").split("->")[-1].strip()
+            if is_lost(to_standard(new)):
+                lost_ids.append(ev.lead_id)
+                seen.add(ev.lead_id)
+        target = [leads[lid] for lid in lost_ids]
+        scope_label = "week"
+    else:
+        target = [l for l in leads.values() if is_lost(to_standard(l.status))]
+        scope_label = "all"
+
     reasons = Counter()
     by_person = defaultdict(Counter)
     by_country = defaultdict(Counter)
     lost_rows = []
-    for l in leads:
-        std = to_standard(l.status)
-        if not is_lost(std):
-            continue
+    for l in target:
         text = " ".join(str(x or "") for x in (l.remarks, l.procurement_remarks, l.internal_notes)).lower()
-        reason = "Unspecified"
-        for label, kws in _LOSS_PATTERNS:
-            if any(k in text for k in kws):
-                reason = label
-                break
+        reason = l.lost_reason or "Unspecified"
+        if reason == "Unspecified":
+            for label, kws in _LOSS_PATTERNS:
+                if any(k in text for k in kws):
+                    reason = label
+                    break
+        owner = owner_display.get((l.assigned_to or "Unassigned").strip().lower(), l.assigned_to or "Unassigned")
         reasons[reason] += 1
-        by_person[l.assigned_to or "Unassigned"][reason] += 1
+        by_person[owner][reason] += 1
         by_country[(l.country or "Unknown").upper()][reason] += 1
-        lost_rows.append({"company": l.company_name, "salesperson": l.assigned_to or "Unassigned",
+        lost_rows.append({"company": l.company_name, "salesperson": owner,
                           "country": l.country or "Unknown", "reason": reason, "notes": str(l.remarks or "")[:120]})
     return {
         "reasons": dict(reasons.most_common()),
         "by_person": {p: dict(c) for p, c in by_person.items()},
         "by_country": {c: dict(v) for c, v in by_country.items()},
-        "rows": lost_rows, "total_lost": len(lost_rows),
+        "rows": lost_rows, "total_lost": len(lost_rows), "scope": scope_label,
     }
 
 
@@ -503,9 +558,7 @@ def management_insights(session: Session, user: dict[str, Any], start: date, end
 def next_week_pipeline(session: Session, user: dict[str, Any]) -> dict[str, list[dict]]:
     leads = session.scalars(select(Lead).where(_scope(user))).all()
     today = biz_today()
-    fu_next = dict(session.execute(
-        select(FollowUp.lead_id, __import__("sqlalchemy").func.max(FollowUp.next_followup)).group_by(FollowUp.lead_id)
-    ).all())
+    fu_next = _latest_followup_map(session, _scope(user))
     buckets = {"hot_followup": [], "negotiation": [], "interested": [], "pending_quotation": [], "overdue": [], "high_nurture": []}
     for l in leads:
         std = to_standard(l.status)

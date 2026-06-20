@@ -153,9 +153,11 @@ with db.session_scope() as session:
             with st.form("quick_fu", clear_on_submit=True):
                 pick = st.selectbox("Company", list(opts))
                 discussion = st.text_area("What happened?")
-                f1, f2 = st.columns(2)
+                f1, f2, f3 = st.columns(3)
                 new_status = f1.selectbox("Update Status", list(CANONICAL_STATUSES))
-                next_fu = f2.date_input("Next Follow-up * (max 30d)", value=biz_today() + timedelta(days=2),
+                channel = f2.selectbox("Channel *", ["Call", "WhatsApp", "Email", "Meeting", "Other"],
+                                       help="How you contacted the buyer — powers the Weekly Review channel breakdown")
+                next_fu = f3.date_input("Next Follow-up * (max 30d)", value=biz_today() + timedelta(days=2),
                                         max_value=MAX_FU)
                 next_plan = st.text_input("Next Action Plan *", placeholder="What will you do next?")
                 lr = st.selectbox("Lost Reason (if Lost)", ["—"] + LOST_REASONS)
@@ -169,7 +171,7 @@ with db.session_scope() as session:
                     service.add_quick_followup(
                         opts[pick],
                         {"discussion": discussion, "next_action": next_plan, "next_followup": next_fu,
-                         "status": new_status, "lost_reason": None if lr == "—" else lr},
+                         "status": new_status, "mode": channel, "lost_reason": None if lr == "—" else lr},
                         user,
                     )
                     st.success("Follow-up saved."); st.cache_data.clear(); st.rerun()

@@ -77,18 +77,25 @@ with db.session_scope() as session:
             sign = "+" if d["dir"] == "up" else "-"
             return f"{sign}{abs(d['pct']):.0f}% vs last wk"
 
+        # ---- THIS WEEK (activity that happened inside the selected window) ----
+        st.markdown("##### 🗓️ This Week")
         r1 = st.columns(5)
-        r1[0].metric("Companies Assigned", cur["assigned_week"])
+        r1[0].metric("New Leads (week)", cur["assigned_week"])
         r1[1].metric("Companies Contacted", cur["contacted_week"], fmt_delta("contacted_week"))
-        r1[2].metric("Calls", cur["calls"], fmt_delta("calls"))
-        r1[3].metric("WhatsApp", cur["whatsapp"], fmt_delta("whatsapp"))
-        r1[4].metric("Emails", cur["emails"], fmt_delta("emails"))
+        r1[2].metric("Follow-ups Done", cur["followups_completed"], fmt_delta("followups_completed"))
+        r1[3].metric("Meetings Done", cur["meetings_done"], fmt_delta("meetings_done"))
+        r1[4].metric("Conversions (wk)", cur["conversions_week"], fmt_delta("conversions_week"))
         r2 = st.columns(5)
-        r2[0].metric("Follow-ups Done", cur["followups_completed"], fmt_delta("followups_completed"))
-        r2[1].metric("Pending Follow-ups", cur["pending_followups"], fmt_delta("pending_followups"))
-        r2[2].metric("Overdue Follow-ups", cur["overdue_followups"], fmt_delta("overdue_followups"))
-        r2[3].metric("Meetings Done", cur["meetings_done"], fmt_delta("meetings_done"))
-        r2[4].metric("Conversions (wk)", cur["conversions_week"], fmt_delta("conversions_week"))
+        r2[0].metric("Calls", cur["calls"], fmt_delta("calls"))
+        r2[1].metric("WhatsApp", cur["whatsapp"], fmt_delta("whatsapp"))
+        r2[2].metric("Emails", cur["emails"], fmt_delta("emails"))
+        r2[3].metric("Task Completion %", f"{cur['task_completion_pct']}%")
+        r2[4].metric("Engagement %", f"{cur['engagement_pct']}%")
+        st.caption("Channel breakdown (Calls/WhatsApp/Emails) populates as the team picks a Channel when logging follow-ups.")
+
+        st.divider()
+        # ---- PIPELINE SNAPSHOT (current state of all leads in scope, not weekly) ----
+        st.markdown("##### 📌 Pipeline Snapshot · current (all-time, not this week)")
         r3 = st.columns(5)
         r3[0].metric("Interested", cur["interested"])
         r3[1].metric("Negotiation", cur["negotiation"])
@@ -96,9 +103,9 @@ with db.session_scope() as session:
         r3[3].metric("Converted (total)", cur["converted_total"])
         r3[4].metric("Lost (total)", cur["lost_total"])
         r4 = st.columns(4)
-        r4[0].metric("Conversion %", f"{cur['conversion_pct']}%")
-        r4[1].metric("Task Completion %", f"{cur['task_completion_pct']}%")
-        r4[2].metric("Engagement %", f"{cur['engagement_pct']}%")
+        r4[0].metric("Pending Follow-ups", cur["pending_followups"])
+        r4[1].metric("Overdue Follow-ups", cur["overdue_followups"])
+        r4[2].metric("Conversion % (lifetime)", f"{cur['conversion_pct']}%")
         r4[3].metric("Hot / Warm Leads", f"{cur['hot']} / {cur['warm']}")
 
         st.divider()
@@ -191,12 +198,12 @@ with db.session_scope() as session:
 
     # ===================== SECTION 5 — LOST ANALYSIS =====================
     with tabs[4]:
-        section_header("Lost Opportunity Analysis", "Why deals did not convert — mined from notes & status.")
-        la = wr.lost_analysis(session, focus_user)
+        section_header("Lost Opportunity Analysis", f"Deals marked Lost this week ({start:%d %b} → {end:%d %b}) — reason from lost-reason field, falling back to notes.")
+        la = wr.lost_analysis(session, focus_user, start, end)
         if la["total_lost"] == 0:
-            empty_state("No lost leads in scope", "Lost reasons appear as leads are marked Lost / Not Interested.")
+            empty_state("No leads lost this week", "Leads marked Lost inside the selected week will appear here.")
         else:
-            st.metric("Total Lost", la["total_lost"])
+            st.metric("Lost This Week", la["total_lost"])
             rdf = pd.DataFrame([{"reason": k, "count": v} for k, v in la["reasons"].items()])
             st.plotly_chart(style_plotly(px.bar(rdf, x="reason", y="count", title="Top Loss Reasons"), height=320), use_container_width=True)
             c1, c2 = st.columns(2)
@@ -264,7 +271,7 @@ with db.session_scope() as session:
         ov = wr.weekly_overview(session, focus_user, start, end)
         perf = wr.salesperson_performance(session, start, end)
         comp = wr.company_activity(session, focus_user, start, end, only_worked=True)
-        la = wr.lost_analysis(session, focus_user)
+        la = wr.lost_analysis(session, focus_user, start, end)
         pipe = wr.next_week_pipeline(session, focus_user)
 
         overview_df = pd.DataFrame([ov])

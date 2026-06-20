@@ -169,6 +169,7 @@ class CRMService:
                 "discussion": payload.get("discussion"),
                 "next_action": payload.get("next_action"),
                 "next_followup": payload.get("next_followup"),
+                "mode": payload.get("mode"),
                 "updated_by": user["full_name"],
             },
         )
