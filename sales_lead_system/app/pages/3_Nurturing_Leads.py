@@ -1,4 +1,4 @@
-"""Nurturing lead intelligence page."""
+"""Nurturing lead intelligence page — redesigned with health cards."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import pandas as pd
 import streamlit as st
 
 from app.db import ensure_startup, get_db, render_startup_status
-from app.ui import configure_page, empty_state, page_header, require_login, section_header
+from app.ui import configure_page, data_table, empty_state, page_header, require_login, section_header
 from modules.crm_service import CRMService
 
 
@@ -55,11 +55,8 @@ with db.session_scope() as session:
     today = date.today()
     nurturing["days_since_last_contact"] = nurturing["last_contact_date"].apply(lambda d: (today - d).days if pd.notna(d) else None)
     nurturing[["health", "suggested_action"]] = nurturing["days_since_last_contact"].apply(lambda d: pd.Series(health(d)))
+
     section_header("Nurturing Queue", "Health is calculated from days since last contact.")
-    st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
-    st.dataframe(
-        nurturing[["lead_id", "company_name", "assigned_to", "days_since_last_contact", "lead_score", "health", "suggested_action", "remarks"]],
-        use_container_width=True,
-        hide_index=True,
+    data_table(
+        nurturing[["lead_id", "company_name", "assigned_to", "days_since_last_contact", "lead_score", "health", "suggested_action", "remarks"]]
     )
-    st.markdown("</div>", unsafe_allow_html=True)

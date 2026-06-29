@@ -5,18 +5,32 @@ from __future__ import annotations
 from typing import Any
 
 
+# ── Brand colors ──
 COLORS = {
     "primary": "#4F46E5",
+    "primary_light": "#6366F1",
+    "primary_dark": "#4338CA",
     "secondary": "#7C3AED",
     "accent": "#06B6D4",
+    "accent_light": "#22D3EE",
     "success": "#10B981",
+    "success_light": "#34D399",
     "warning": "#F59E0B",
+    "warning_light": "#FBBF24",
     "danger": "#EF4444",
-    "background": "#F8FAFC",
+    "danger_light": "#F87171",
+    # Surfaces
+    "background": "#F1F5F9",
     "card": "#FFFFFF",
+    "glass": "rgba(255, 255, 255, 0.72)",
+    # Text
     "text": "#0F172A",
+    "text_secondary": "#334155",
     "muted": "#64748B",
+    "muted_light": "#94A3B8",
+    # Borders
     "border": "#E2E8F0",
+    "border_light": "#F1F5F9",
 }
 
 CHART_SEQUENCE = [
@@ -31,7 +45,6 @@ CHART_SEQUENCE = [
 ]
 
 STATUS_COLORS = {
-    # New 10-stage funnel
     "Prospect": "#2563EB",
     "Requirement Qualified": "#0284C7",
     "Technical Discussion": "#0E7490",
@@ -42,13 +55,20 @@ STATUS_COLORS = {
     "Order Closed": "#15803D",
     "Nurturing": COLORS["secondary"],
     "Lost": COLORS["danger"],
-    # Legacy values (for un-migrated or old chart data)
+    # Legacy
     "NEW": "#2563EB",
     "Active": "#2563EB",
     "Nurture": COLORS["secondary"],
     "Inactive": COLORS["muted"],
     "Negotiation_old": COLORS["warning"],
     "Converted": "#15803D",
+}
+
+SCORE_BAND_COLORS = {
+    "HOT": {"bg": "#FEE2E2", "text": "#B91C1C", "border": "#FECACA", "emoji": "🔥"},
+    "WARM": {"bg": "#FFEDD5", "text": "#C2410C", "border": "#FED7AA", "emoji": "🟠"},
+    "NURTURE": {"bg": "#FEF9C3", "text": "#854D0E", "border": "#FDE047", "emoji": "🟡"},
+    "COLD": {"bg": "#E0F2FE", "text": "#0369A1", "border": "#BAE6FD", "emoji": "🔵"},
 }
 
 KPI_META = {
@@ -61,7 +81,13 @@ KPI_META = {
     "Inactive Leads": ("IL", COLORS["muted"]),
     "Converted": ("CL", COLORS["success"]),
     "Conversion Rate": ("CR", "#0EA5E9"),
+    "Today's Tasks": ("TT", COLORS["primary"]),
+    "Upcoming 7d": ("U7", COLORS["accent"]),
+    "Negotiation": ("NG", "#92400E"),
+    "Task Completion": ("TC", COLORS["success"]),
 }
+
+BAND_ORDER = ["HOT", "WARM", "NURTURE", "COLD"]
 
 
 def style_plotly(fig: Any, height: int = 420) -> Any:

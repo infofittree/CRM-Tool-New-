@@ -16,7 +16,7 @@ from app.security import hash_password
 from config.settings import LOG_DIR, PROJECT_ROOT
 from database.db_connection import DatabaseConnection
 from database.models import AppSetting, Base, Lead, LeadSequence, User
-from database.schema_manager import ensure_assignment_integrity, ensure_column_defaults, ensure_phase2_schema, ensure_phase3_schema, ensure_phase4_schema, ensure_phase5_data_cleanup
+from database.schema_manager import ensure_assignment_integrity, ensure_column_defaults, ensure_phase2_schema, ensure_phase3_schema, ensure_phase4_schema, ensure_phase5_data_cleanup, ensure_phase6_schema, ensure_phase7_schema, ensure_phase8_schema, ensure_phase9_schema
 from modules.dropdown_config import sync_dropdowns_from_workbook
 from modules.logger import setup_logger
 from modules.mysql_sync import MySQLSyncEngine
@@ -45,7 +45,7 @@ class StartupStatus:
 
 
 # Bump this when schema/migrations change to force a one-time re-bootstrap.
-BOOTSTRAP_VERSION = "2026-06-05"
+BOOTSTRAP_VERSION = "2026-06-22-v2"
 # Process-level memo so additional sessions in the SAME app process skip even the flag read.
 _PROCESS_BOOTSTRAPPED = False
 
@@ -68,14 +68,18 @@ def _put_setting(db: DatabaseConnection, key: str, value: str) -> None:
 def _run_full_bootstrap(db: DatabaseConnection, status: StartupStatus, logger, force_sync: bool) -> None:
     """Heavy, run-once work: schema migrations, data cleanup, scores, excel sync."""
     db.ensure_database_exists()
+    ensure_phase7_schema(db.engine)   # must run before create_all to fix activity_logs PK
     Base.metadata.create_all(db.engine)
     ensure_phase2_schema(db.engine)
     ensure_phase3_schema(db.engine)
     ensure_phase4_schema(db.engine)
     ensure_phase5_data_cleanup(db.engine)
+    ensure_phase6_schema(db.engine)
+    ensure_phase8_schema(db.engine)
+    ensure_phase9_schema(db.engine)
     ensure_assignment_integrity(db.engine)
     ensure_column_defaults(db.engine)
-    _ensure_default_admin(db)
+    ensure_default_admin(db)
 
     lead_count = _lead_count(db)
     source_file, source_kind = _find_sync_source()
@@ -100,18 +104,17 @@ def _run_full_bootstrap(db: DatabaseConnection, status: StartupStatus, logger, f
 
 
 def initialize_crm(db: DatabaseConnection, progress: ProgressCallback | None = None, force_sync: bool = False) -> StartupStatus:
-    """Connect to MySQL; run heavy bootstrap ONCE (then fast path on every other load)."""
+    """Connect to database; run heavy bootstrap ONCE (then fast path on every other load)."""
     global _PROCESS_BOOTSTRAPPED
     logger = setup_logger(LOG_DIR)
     status = StartupStatus()
 
     try:
-        _emit(progress, "MySQL Connected", "Checking MySQL connection")
+        _emit(progress, "Database Connected", "Checking database connection")
         if not db.health_check():
-            # Only attempt DB creation if the plain connection failed (first run).
             db.ensure_database_exists()
             if not db.health_check():
-                raise RuntimeError(db.last_error_message or "MySQL health check failed")
+                raise RuntimeError(db.last_error_message or "Database health check failed")
         status.mysql_connected = True
 
         # Always ensure tables exist (cheap, idempotent) so new tables added in
@@ -156,11 +159,13 @@ def _emit(progress: ProgressCallback | None, label: str, detail: str) -> None:
         progress(label, detail)
 
 
-def _ensure_default_admin(db: DatabaseConnection) -> None:
+def ensure_default_admin(db: DatabaseConnection) -> None:
     import os
 
-    username = os.getenv("CRM_ADMIN_USER", "admin")
-    password = os.getenv("CRM_ADMIN_PASSWORD", "admin123")
+    username = os.getenv("CRM_ADMIN_USER")
+    password = os.getenv("CRM_ADMIN_PASSWORD")
+    if not username or not password:
+        return
     with db.session_scope() as session:
         has_user = session.scalar(select(User.user_id).limit(1))
         if has_user:

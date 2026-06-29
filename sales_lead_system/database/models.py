@@ -5,15 +5,20 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, deferred, mapped_column, relationship
 
 from modules.dropdown_config import all_allowed_statuses
 
 
 ALLOWED_STATUSES = all_allowed_statuses()
 
-USER_ROLES = ("Admin", "Manager", "Salesperson")
+USER_ROLES = ("Admin", "Manager", "Salesperson", "Procurement")
 PRIORITY_LEVELS = ("HIGH", "MEDIUM", "LOW")
+
+INQUIRY_TYPES = ("PRICING", "AVAILABILITY", "PACKAGING", "DOCUMENTATION", "MOQ", "LEAD_TIME", "CUSTOM")
+INQUIRY_PRIORITIES = ("LOW", "MEDIUM", "HIGH", "URGENT")
+INQUIRY_STATUSES = ("OPEN", "EOD_COMMITTED", "PENDING_RESPONSE", "RESPONDED", "OVERDUE", "CLOSED")
+INQUIRY_COMMITMENT_TYPES = ("ANSWER_NOW", "BY_EOD", "WILL_TAKE_TIME")
 
 
 class Base(DeclarativeBase):
@@ -28,9 +33,15 @@ class TimestampMixin:
 
 
 class SoftDeleteMixin:
-    """Soft delete marker for future multi-user CRM workflows."""
+    """Soft delete marker for future multi-user CRM workflows.
+
+    `is_deleted` bool replaces `deleted_at IS NULL` checks for faster querying.
+    Both columns coexist — `is_deleted` is the indexable flag, `deleted_at` preserves
+    the timestamp for audit purposes. Backfilled by `ensure_phase6_schema()`.
+    """
 
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0", index=True)
 
 
 class Lead(Base, TimestampMixin, SoftDeleteMixin):
@@ -43,7 +54,9 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
         Index("ix_leads_priority", "priority_level"),
         Index("ix_leads_email", "email"),
         Index("ix_leads_phone", "phone"),
-        # Email uniqueness removed — CRM can have multiple contacts per email domain
+        Index("ix_leads_deleted_assigned", "deleted_at", "assigned_to"),
+        Index("ix_leads_is_deleted_assigned", "is_deleted", "assigned_to"),
+        Index("ix_leads_lead_id_prefix", "lead_id"),
     )
 
     lead_id: Mapped[str] = mapped_column(String(32), primary_key=True)
@@ -74,9 +87,9 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     expected_quantity: Mapped[str | None] = mapped_column(String(100))
     budget_range: Mapped[str | None] = mapped_column(String(100))
     priority_level: Mapped[str] = mapped_column(String(20), nullable=False, default="MEDIUM", server_default="MEDIUM", index=True)
-    remarks: Mapped[str | None] = mapped_column(Text)
-    procurement_remarks: Mapped[str | None] = mapped_column(Text)
-    internal_notes: Mapped[str | None] = mapped_column(Text)
+    remarks: Mapped[str | None] = deferred(mapped_column(Text))
+    procurement_remarks: Mapped[str | None] = deferred(mapped_column(Text))
+    internal_notes: Mapped[str | None] = deferred(mapped_column(Text))
     created_date: Mapped[date | None] = mapped_column(Date)
     lead_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0")
     last_contact_date: Mapped[date | None] = mapped_column(Date)
@@ -84,13 +97,19 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     first_contact_date: Mapped[date | None] = mapped_column(Date)
     sheet_source: Mapped[str | None] = mapped_column(String(50))  # Buyer_Master | Alibaba
     # Phase 4 — new 10-stage funnel (2026-06-02 restructure)
-    address: Mapped[str | None] = mapped_column(Text)                      # full postal address
+    address: Mapped[str | None] = deferred(mapped_column(Text))            # full postal address
     inquiry_date: Mapped[date | None] = mapped_column(Date)                # date the buyer inquired
     lead_category: Mapped[str | None] = mapped_column(String(5))           # A / B / C
     buyer_engagement_frequency: Mapped[str | None] = mapped_column(String(20))  # Frequent / Medium / Low
-    next_action_plan: Mapped[str | None] = mapped_column(Text)             # mandatory for new leads
+    next_action_plan: Mapped[str | None] = deferred(mapped_column(Text))   # mandatory for new leads
     lost_reason: Mapped[str | None] = mapped_column(String(100))           # mandatory when status = Lost
     legacy_status: Mapped[str | None] = mapped_column(String(50))          # pre-migration status preserved
+    # Sprint 2 — Lead progression from task outcome
+    interest_level: Mapped[str | None] = mapped_column(String(20))          # LOW, MEDIUM, HIGH, VERY_HIGH
+    potential_deal_value: Mapped[str | None] = mapped_column(String(50))   # e.g., "50000", "100000-200000"
+    customer_requirements: Mapped[str | None] = deferred(mapped_column(Text))
+    # Sprint 3 — Pipeline momentum indicator
+    has_pending_followup: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
 
     followups: Mapped[list["FollowUp"]] = relationship(
         back_populates="lead",
@@ -106,6 +125,7 @@ class FollowUp(Base):
     __tablename__ = "followups"
     __table_args__ = (
         Index("ix_followups_lead_date", "lead_id", "followup_date"),
+        Index("ix_followups_lead_next", "lead_id", "next_followup"),
         Index("ix_followups_next_followup", "next_followup"),
     )
 
@@ -124,6 +144,9 @@ class FollowUp(Base):
     status: Mapped[str | None] = mapped_column(String(50))
     updated_by: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    outcome_notes: Mapped[str | None] = mapped_column(Text)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    completed_by: Mapped[str | None] = mapped_column(String(100))
 
     lead: Mapped[Lead] = relationship(back_populates="followups", lazy="joined")
 
@@ -132,7 +155,11 @@ class ActivityLog(Base):
     """Audit trail and future activity timeline."""
 
     __tablename__ = "activity_logs"
-    __table_args__ = (Index("ix_activity_logs_lead_timestamp", "lead_id", "timestamp"),)
+    __table_args__ = (
+        Index("ix_activity_logs_lead_timestamp", "lead_id", "timestamp"),
+        Index("ix_activity_logs_timestamp", "timestamp"),
+        Index("ix_activity_logs_action", "action"),
+    )
 
     log_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
@@ -141,7 +168,7 @@ class ActivityLog(Base):
     lead_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("leads.lead_id"))
     remarks: Mapped[str | None] = mapped_column(Text)
 
-    lead: Mapped[Lead | None] = relationship(back_populates="activity_logs", lazy="joined")
+    lead: Mapped[Lead | None] = relationship(back_populates="activity_logs", lazy="select")
 
 
 class DuplicateReport(Base):
@@ -158,6 +185,25 @@ class DuplicateReport(Base):
     lead_2: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), nullable=False)
     similarity_score: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+
+class CrmAlert(Base):
+    """System-generated alerts for lead health, overdue tasks, etc."""
+
+    __tablename__ = "crm_alerts"
+    __table_args__ = (
+        Index("ix_crm_alerts_lead", "lead_id"),
+        Index("ix_crm_alerts_is_read", "is_read"),
+        Index("ix_crm_alerts_created", "created_at"),
+    )
+
+    alert_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("leads.lead_id"), index=True)
+    alert_type: Mapped[str] = mapped_column(String(50), nullable=False)  # no_followup, inactive, overdue_task, inquiry_overdue
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    assigned_to: Mapped[str | None] = mapped_column(String(100))
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 
@@ -295,3 +341,34 @@ class ErrorLog(Base):
     error: Mapped[str | None] = mapped_column(Text)
     user_name: Mapped[str | None] = mapped_column(String(100))
     traceback: Mapped[str | None] = mapped_column(Text)
+
+
+class Inquiry(Base, TimestampMixin):
+    """Sales inquiry from a Salesperson to Procurement/Operations."""
+
+    __tablename__ = "inquiries"
+    __table_args__ = (
+        Index("ix_inquiries_lead_id", "lead_id"),
+        Index("ix_inquiries_status", "status"),
+        Index("ix_inquiries_assigned_to", "assigned_to"),
+        Index("ix_inquiries_created_by", "created_by"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    assigned_to: Mapped[str] = mapped_column(String(100), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    response: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="OPEN")
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime)
+    commitment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    expected_response_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    committed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # legacy columns — kept for backward compatibility, no longer used
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    estimated_response_time: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    acknowledgement_note: Mapped[str | None] = mapped_column(Text, nullable=True)

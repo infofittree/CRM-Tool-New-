@@ -16,7 +16,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from database.models import ActivityLog, EngagementEvent, FollowUp, Lead
@@ -65,9 +65,8 @@ def _dt_end(d: date) -> datetime:
 def _scope(user: dict[str, Any]):
     base = Lead.deleted_at.is_(None)
     if user.get("role") == "Salesperson":
-        from sqlalchemy import and_, func
-        name = (user.get("full_name") or "").strip().lower()
-        return and_(base, func.lower(func.trim(Lead.assigned_to)) == name)
+        name = (user.get("full_name") or "").strip()
+        return and_(base, or_(Lead.assigned_to == name.upper(), Lead.assigned_to == name.lower()))
     return base
 
 
@@ -104,18 +103,22 @@ def _group_by_owner(leads: list[Lead]) -> tuple[dict[str, list[Lead]], dict[str,
 
 
 def _latest_followup_map(session: Session, scope=None) -> dict[str, Any]:
-    """Map lead_id -> next_followup taken from each lead's most recently ENTERED
-    follow-up (ordered by followup_id), matching dashboard_queries and the task
-    engine. This deliberately does NOT use max(next_followup) so a salesperson who
-    corrects a wrongly-future date is honoured everywhere consistently.
+    """Map lead_id -> next_followup using SQL MAX(followup_id) per lead.
+
+    Single SQL aggregation instead of iterating every follow-up row in Python.
     """
-    stmt = select(FollowUp.lead_id, FollowUp.next_followup).order_by(FollowUp.followup_id.asc())
+    latest = func.max(FollowUp.followup_id)
+    subq = (
+        select(FollowUp.lead_id, func.max(FollowUp.followup_id).label("max_id"))
+    )
     if scope is not None:
-        stmt = stmt.join(Lead).where(scope)
-    out: dict[str, Any] = {}
-    for lid, nf in session.execute(stmt).all():
-        out[lid] = nf  # later (higher followup_id) rows overwrite -> latest decision
-    return out
+        subq = subq.join(Lead).where(scope)
+    subq = subq.group_by(FollowUp.lead_id).subquery()
+
+    stmt = select(FollowUp.lead_id, FollowUp.next_followup).join(
+        subq, and_(FollowUp.lead_id == subq.c.lead_id, FollowUp.followup_id == subq.c.max_id)
+    )
+    return {lid: nf for lid, nf in session.execute(stmt).all() if nf}
 
 
 # --------------------------------------------------------------------------- #
@@ -137,22 +140,35 @@ def _collect_week_activity(session: Session, lead_ids: set[str], start: date, en
     s, e = _dt_start(start), _dt_end(end)
     per_lead: dict[str, list[dict]] = defaultdict(list)
 
-    for ev in session.scalars(select(EngagementEvent).where(EngagementEvent.occurred_at >= s, EngagementEvent.occurred_at <= e)):
-        if ev.lead_id in lead_ids:
+    if lead_ids:
+        for ev in session.scalars(
+            select(EngagementEvent).where(
+                EngagementEvent.occurred_at >= s, EngagementEvent.occurred_at <= e,
+                EngagementEvent.lead_id.in_(lead_ids),
+            )
+        ):
             per_lead[ev.lead_id].append({
                 "when": ev.occurred_at, "source": "engagement", "type": ev.event_type,
                 "user": ev.user_name, "text": ev.notes or "",
             })
-    # Follow-ups counted by their REAL date (followup_date), not import created_at.
-    for fu in session.scalars(select(FollowUp).where(FollowUp.followup_date >= start, FollowUp.followup_date <= end)):
-        if fu.lead_id in lead_ids:
+        for fu in session.scalars(
+            select(FollowUp).where(
+                FollowUp.followup_date >= start, FollowUp.followup_date <= end,
+                FollowUp.lead_id.in_(lead_ids),
+            )
+        ):
             when = datetime.combine(fu.followup_date, time(12, 0)) if fu.followup_date else fu.created_at
             per_lead[fu.lead_id].append({
                 "when": when, "source": "followup", "type": (fu.mode or "followup").lower(),
                 "user": fu.updated_by or fu.assigned_to, "text": fu.discussion or fu.next_action or "",
             })
-    for al in session.scalars(select(ActivityLog).where(ActivityLog.timestamp >= s, ActivityLog.timestamp <= e)):
-        if al.lead_id in lead_ids and (al.action or "").upper() not in _AUDIT_NOISE:
+        for al in session.scalars(
+            select(ActivityLog).where(
+                ActivityLog.timestamp >= s, ActivityLog.timestamp <= e,
+                ActivityLog.lead_id.in_(lead_ids),
+                or_(ActivityLog.action.is_(None), ~ActivityLog.action.in_(_AUDIT_NOISE)),
+            )
+        ):
             per_lead[al.lead_id].append({
                 "when": al.timestamp, "source": "audit", "type": al.action,
                 "user": al.user_name, "text": al.remarks or "",

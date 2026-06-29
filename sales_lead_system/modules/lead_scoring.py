@@ -14,7 +14,19 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
+from sqlalchemy import bindparam
+
+from database.models import Lead
 from modules.status_taxonomy import STAGE_BASE_SCORE, to_canonical
+
+# Column name cache (avoids repeated reflection in recompute_all_scores)
+_LEAD_COLUMN_NAMES: list[str] | None = None
+
+def _lead_columns() -> list[str]:
+    global _LEAD_COLUMN_NAMES
+    if _LEAD_COLUMN_NAMES is None:
+        _LEAD_COLUMN_NAMES = [c.name for c in Lead.__table__.columns]
+    return _LEAD_COLUMN_NAMES
 
 # Band thresholds
 BAND_HOT = 80
@@ -112,19 +124,30 @@ def score_lead(lead: dict[str, Any], **_kwargs) -> tuple[float, str, dict[str, f
 
 
 def recompute_all_scores(session) -> int:
-    """Recompute and persist lead_score for every non-deleted lead.
+    """Recompute and persist lead_score for every non-deleted lead in batches.
 
-    Reads category + engagement_frequency from DB — the new fields must exist
-    (phase4 migration runs before scoring). Safe to re-run.
+    Uses bulk_update for efficiency — avoids loading all entities into the session.
     """
     from sqlalchemy import select
     from database.models import Lead
 
+    BATCH_SIZE = 500
     updated = 0
-    for lead in session.scalars(select(Lead).where(Lead.deleted_at.is_(None))).all():
-        lead_dict = {col.name: getattr(lead, col.name) for col in Lead.__table__.columns}
-        score, _band, _bd = score_lead(lead_dict)
-        if lead.lead_score != score:
-            lead.lead_score = score
-            updated += 1
+    offset = 0
+    while True:
+        batch = session.scalars(
+            select(Lead).where(Lead.deleted_at.is_(None)).order_by(Lead.lead_id).offset(offset).limit(BATCH_SIZE)
+        ).all()
+        if not batch:
+            break
+        updates = []
+        for lead in batch:
+            lead_dict = {c: getattr(lead, c) for c in _lead_columns()}
+            score, _band, _bd = score_lead(lead_dict)
+            if lead.lead_score != score:
+                updates.append({"lead_id": lead.lead_id, "lead_score": score})
+        if updates:
+            session.execute(Lead.__table__.update().where(Lead.lead_id == bindparam("lead_id")), updates)
+        updated += len(updates)
+        offset += BATCH_SIZE
     return updated

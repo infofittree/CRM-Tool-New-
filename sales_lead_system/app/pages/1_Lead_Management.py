@@ -1,9 +1,9 @@
-"""Lead management page."""
+"""Lead management page — redesigned with modern filter card and detail panel."""
 
 from __future__ import annotations
 
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -14,11 +14,10 @@ import pandas as pd
 import streamlit as st
 
 from app.db import ensure_startup, get_db, render_startup_status
-from app.ui import configure_page, empty_state, page_header, require_login, score_badge, section_header, status_pill
+from app.ui import configure_page, data_table, empty_state, page_header, require_login, score_badge, section_header, status_pill
 from database.models import ALLOWED_STATUSES
 from modules.clock import today as biz_today
 from modules.crm_service import CRMService, COUNTRIES, LEAD_SOURCES
-
 
 configure_page("Lead Management")
 user = require_login("Lead Management")
@@ -34,9 +33,8 @@ from app.db import load_leads_df, clear_data_cache
 from modules.dashboard_queries import _latest_followup_per_lead
 with db.session_scope() as session:
     service = CRMService(session)
-    leads = load_leads_df(user["role"], user["full_name"], 1000).copy()  # copy: don't mutate cache
+    leads = load_leads_df(user["role"], user["full_name"], 1000).copy()
     salespersons = service.get_salespersons()
-    # Join each lead's latest Next Follow-up date so salespeople can see/verify it
     if not leads.empty and "lead_id" in leads.columns:
         _fu_map = _latest_followup_per_lead(session, user)
         leads["next_followup"] = leads["lead_id"].map(_fu_map)
@@ -58,26 +56,19 @@ with db.session_scope() as session:
         if submitted:
             result = service.save_lead_from_entry(
                 {
-                    "company_name": company_name,
-                    "contact_person": contact_person,
-                    "phone": phone,
-                    "email": email,
-                    "country": country,
-                    "lead_source": lead_source,
-                    "assigned_to": assigned_to,
-                    "status": status,
-                    "next_follow_up": next_follow_up,
-                    "remarks": remarks,
+                    "company_name": company_name, "contact_person": contact_person,
+                    "phone": phone, "email": email, "country": country,
+                    "lead_source": lead_source, "assigned_to": assigned_to,
+                    "status": status, "next_follow_up": next_follow_up, "remarks": remarks,
                 },
-                user,
-                force=False,
+                user, force=False,
             )
             if result.ok:
                 st.success(f"Lead saved: {result.lead_id}")
                 st.rerun()
             elif result.duplicates:
                 st.warning(result.message)
-                st.dataframe(pd.DataFrame(result.duplicates), use_container_width=True, hide_index=True)
+                data_table(pd.DataFrame(result.duplicates))
             else:
                 st.error(result.message)
 
@@ -86,7 +77,6 @@ with db.session_scope() as session:
         empty_state("No leads available", "Add a lead or sync Excel data to populate the table.")
         st.stop()
 
-    # Derive score band for visibility / filtering / sorting
     def _band(score):
         s = float(score or 0)
         return "HOT" if s >= 90 else "WARM" if s >= 70 else "NURTURE" if s >= 50 else "COLD"
@@ -101,9 +91,7 @@ with db.session_scope() as session:
     continent_filter = filter_col5.multiselect("Continent", sorted(leads["continent"].dropna().unique()) if "continent" in leads.columns else [])
     band_filter = filter_col6.multiselect("Score Band", ["HOT", "WARM", "NURTURE", "COLD"])
 
-    sort_choice = st.radio(
-        "Sort", ["Highest score first", "Lowest score first", "Most recent"], horizontal=True
-    )
+    sort_choice = st.radio("Sort", ["Highest score first", "Lowest score first", "Most recent"], horizontal=True)
 
     filtered = leads.copy()
     if query:
@@ -130,7 +118,6 @@ with db.session_scope() as session:
         empty_state("No leads match the current filters", "Adjust the search or remove one of the filters.")
         st.stop()
 
-    # Surface score columns first for visibility
     if "lead_score" in filtered.columns:
         front = [c for c in ["lead_id", "company_name", "lead_score", "band", "standard_status", "next_followup", "assigned_to", "country"] if c in filtered.columns]
         rest = [c for c in filtered.columns if c not in front]
@@ -141,13 +128,11 @@ with db.session_scope() as session:
     total_pages = max((len(filtered) - 1) // page_size + 1, 1)
     page_number = page_col2.number_input("Page", min_value=1, max_value=total_pages, value=1)
     start = (page_number - 1) * page_size
-    paged = filtered.iloc[start : start + page_size]
+    paged = filtered.iloc[start: start + page_size]
 
     st.caption(f"Showing {len(paged)} of {len(filtered)} leads")
     st.download_button("Export Filtered Leads CSV", filtered.to_csv(index=False), file_name=f"leads_{biz_today()}.csv", mime="text/csv")
-    st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
-    st.dataframe(paged, use_container_width=True, hide_index=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    data_table(paged)
 
     section_header("Lead Detail", "Review and update the selected account.")
     selected = st.selectbox("Select Lead", filtered["lead_id"].tolist())
@@ -171,19 +156,15 @@ with db.session_scope() as session:
         )
     with right:
         from modules.dropdown_config import option_list
-        from datetime import date, timedelta
         _lost_reasons = option_list("lost_reasons")
         _sl = list(ALLOWED_STATUSES)
         _si = _sl.index(detail["status"]) if detail["status"] in _sl else 0
         new_status = st.selectbox("Update Status", _sl, index=_si)
-        # Lead Category — always editable (buyer quality changes over time)
         _cats = ["A", "B", "C"]
         _cur_cat = str(detail.get("lead_category") or "").strip().upper()
         _cat_opts = ["— select —"] + _cats
         _cat_idx = _cat_opts.index(_cur_cat) if _cur_cat in _cats else 0
-        new_category = st.selectbox("Lead Category (A/B/C) *", _cat_opts, index=_cat_idx,
-                                    help="Reclassify as buyer quality changes.")
-        # Alibaba Buyer Level — only for Alibaba-source leads
+        new_category = st.selectbox("Lead Category (A/B/C) *", _cat_opts, index=_cat_idx)
         new_level = None
         if str(detail.get("lead_source") or "").strip().lower() == "alibaba":
             _lvls = ["— none —", "NEW", "L1", "L2", "L3", "L4"]
@@ -193,8 +174,7 @@ with db.session_scope() as session:
             from modules.lead_scoring import suggest_category_from_alibaba_level
             _sug = suggest_category_from_alibaba_level(None if new_level == "— none —" else new_level)
             if _sug:
-                st.caption(f"💡 Suggested category for {new_level}: **{_sug}** (override allowed)")
-        # Lost reason appears (mandatory) only when Lost is chosen
+                st.caption(f"💡 Suggested category for {new_level}: **{_sug}**")
         lost_reason = "—"
         if new_status == "Lost":
             lost_reason = st.selectbox("Lost Reason * (mandatory)", ["—"] + _lost_reasons)
@@ -205,15 +185,14 @@ with db.session_scope() as session:
         except Exception:
             _curfu = None
         _default_fu = _curfu if (_curfu and _curfu <= _maxfu) else biz_today() + timedelta(days=2)
-        next_fu = st.date_input("Next Follow-up * (max 30 days) — fix it here if wrong",
-                                value=_default_fu, max_value=_maxfu)
+        next_fu = st.date_input("Next Follow-up * (max 30 days)", value=_default_fu, max_value=_maxfu)
         new_remarks = st.text_area("Add Notes", value=str(detail.get("remarks") or ""))
         if st.button("Save Updates", use_container_width=True):
             _is_lost = new_status == "Lost"
             if _is_lost and lost_reason == "—":
                 st.error("Lost Reason is mandatory when marking a lead as Lost.")
             elif not _is_lost and not next_plan.strip():
-                st.error("Next Action Plan is mandatory.")  # not required for Lost (Phase 5)
+                st.error("Next Action Plan is mandatory.")
             elif new_category == "— select —":
                 st.error("Lead Category (A/B/C) is mandatory.")
             else:
@@ -239,7 +218,6 @@ with db.session_scope() as session:
             st.success("Lead marked Order Closed.")
             st.rerun()
         st.divider()
-        # ---- Transfer Lead (Phase 4) ----
         st.markdown("**Transfer Lead**")
         _others = [s for s in salespersons if s != detail.get("assigned_to")]
         tcol1, tcol2 = st.columns([2, 1])
@@ -251,10 +229,8 @@ with db.session_scope() as session:
                 st.success(f"Lead transferred to {transfer_to}.")
                 st.rerun()
             else:
-                st.warning("Transfer not applied (same owner or lead missing).")
-
+                st.warning("Transfer not applied.")
         st.divider()
-        # ---- Delete Lead with confirmation (Phase 3) ----
         st.markdown("**Danger zone**")
         if not st.session_state.get(f"confirm_del_{selected}"):
             if st.button("🗑️ Delete Lead", use_container_width=True, key=f"del_{selected}"):
@@ -274,10 +250,9 @@ with db.session_scope() as session:
                 st.session_state.pop(f"confirm_del_{selected}", None)
                 st.rerun()
 
-    # ====== SEPARATE FULL EDIT-LEAD FORM (4.1) — independent of the panel above ======
     from modules.dropdown_config import option_list as _opt
     _CONTINENTS = _opt("continents")
-    section_header("✏️ Edit Lead Details", "Correct any field on the selected lead. Every change is audit-logged.")
+    section_header("Edit Lead Details", "Correct any field on the selected lead. Every change is audit-logged.")
     with st.expander(f"Edit all details for {detail.get('company_name') or detail.get('contact_person') or selected}"):
         with st.form(f"edit_lead_full_{selected}"):
             e1, e2, e3 = st.columns(3)
@@ -298,7 +273,7 @@ with db.session_scope() as session:
             e_website = e1.text_input("Website", value=str(detail.get("website") or ""))
             e_address = st.text_input("Address", value=str(detail.get("address") or ""))
             e_notes = st.text_area("Notes", value=str(detail.get("remarks") or ""))
-            edit_submitted = st.form_submit_button("💾 Save Edits", use_container_width=True)
+            edit_submitted = st.form_submit_button("Save Edits", use_container_width=True)
         if edit_submitted:
             payload = {
                 "contact_person": e_contact, "company_name": e_company, "email": e_email,

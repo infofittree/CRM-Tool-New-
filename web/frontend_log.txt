@@ -1,0 +1,442 @@
+﻿
+> fittree-crm@1.0.0 dev
+> vite
+
+
+  [32m[1mVITE[22m v6.4.3[39m  [2mready in [0m[1m1141[22m[2m[0m ms[22m
+
+  [32mΓ₧£[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32mΓ₧£[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m9:45:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mΓ£¿ new dependencies optimized: [33mrecharts[32m[39m
+[2m9:45:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mΓ£¿ optimized dependencies changed. reloading[39m
+[2m9:45:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m9:58:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\button.tsx, /src/index.css[22m
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\button.tsx[22m Could not Fast Refresh (new export)
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/DataEntry.tsx, /src/pages/Reports.tsx, /src/pages/Settings.tsx, /src/pages/Login.tsx, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\layout\Sidebar.tsx[22m
+[2m9:58:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\card.tsx, /src/index.css[22m
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\card.tsx[22m Could not Fast Refresh (new export)
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Nurturing.tsx, /src/pages/DataEntry.tsx, /src/pages/Team.tsx, /src/pages/Dashboard.tsx, /src/pages/MyWorkspace.tsx, /src/pages/Reports.tsx, /src/pages/Settings.tsx, /src/pages/Login.tsx, /src/pages/Tasks.tsx, /src/pages/WeeklyReview.tsx, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx, /src/pages/Analytics.tsx[22m
+[2m9:58:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m9:58:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:58 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m9:58:58 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:58 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:58:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:58:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:00 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:00 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:06 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/layout/AppShell.tsx, /src/index.css[22m
+[2m9:59:06 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:06 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\layout\Sidebar.tsx, /src/index.css[22m
+[2m9:59:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:31 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:31 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m9:59:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m9:59:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m9:59:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:12 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:12 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:21 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:21 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:21 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:26 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:26 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:31 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:31 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:32 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:32 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:32 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:32 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:43 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:43 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:00:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:00:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:01:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mΓ£¿ new dependencies optimized: [33mlucide-react[32m[39m
+[2m10:01:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mΓ£¿ optimized dependencies changed. reloading[39m
+[2m10:01:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:35 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:35 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:01:41 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:01:41 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:00 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadManagement.tsx, /src/index.css[22m
+[2m10:02:00 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:00 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:01 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:01 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:10 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:10 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:11 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:11 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tasks.tsx, /src/index.css[22m
+[2m10:02:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:29 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:42 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:42 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:43 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:43 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:02:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:02:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadDetail.tsx, /src/index.css[22m
+[2m10:03:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:15 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:15 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:24 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:24 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:30 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:34 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:34 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:35 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:35 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Analytics.tsx, /src/index.css[22m
+[2m10:03:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:03:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:03:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:04 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Team.tsx, /src/index.css[22m
+[2m10:04:04 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:04 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:05 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:05 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:16 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Nurturing.tsx, /src/index.css[22m
+[2m10:04:16 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:16 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:17 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:17 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:18 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:26 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Reports.tsx, /src/index.css[22m
+[2m10:04:26 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:26 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:27 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m10:04:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:40 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m10:04:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m10:04:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:04:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:04:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/MyWorkspace.tsx, /src/index.css[22m
+[2m10:05:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:03 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:03 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:03 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:04 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:04 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:12 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m10:05:12 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:12 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:14 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:15 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:15 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m10:05:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:19 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:21 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:21 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m10:05:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:24 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:24 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/DataEntry.tsx, /src/index.css[22m
+[2m10:05:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:36 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:46 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:47 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:52 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:05:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:05:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:06:01 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:06:01 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:06:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:06:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:06:02 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:31:06 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:31:06 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:34:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:34:08 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:34:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:34:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:34:37 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m10:34:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m10:34:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+node.exe : [2m10:38:23 am[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/users[39m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([2m10:38:23 am...i/v1/users[39m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m10:38:23 am[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/auth/me[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m10:38:23 am[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/auth/me[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m10:39:53 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Dashboard.tsx, /src/pages/Tasks.tsx[22m
+[2m10:39:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx[22m
+[2m10:40:09 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:40:16 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:40:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:40:32 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:40:51 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Analytics.tsx, /src/index.css[22m
+[2m10:41:07 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m10:41:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Reports.tsx, /src/index.css[22m
+[2m10:41:28 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m10:41:33 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Nurturing.tsx, /src/index.css[22m
+[2m10:41:39 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Team.tsx, /src/index.css[22m
+[2m10:41:44 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/MyWorkspace.tsx, /src/index.css[22m
+[2m10:41:49 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m10:57:16 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m11:27:20 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m11:27:41 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\button.tsx, /src/index.css[22m
+[2m11:27:59 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\card.tsx, /src/index.css[22m
+[2m11:28:41 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\input.tsx, /src/index.css[22m
+[2m11:29:11 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\layout\Sidebar.tsx, /src/index.css[22m
+[2m11:29:23 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/layout/AppShell.tsx, /src/index.css[22m
+[2m11:30:13 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m11:30:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadManagement.tsx, /src/index.css[22m
+[2m11:31:22 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m11:50:45 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadManagement.tsx, /src/index.css[22m
+[2m11:50:54 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m11:51:05 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m11:51:17 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Reports.tsx, /src/index.css[22m
+[2m11:51:35 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Analytics.tsx, /src/index.css[22m
+[2m11:52:25 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Nurturing.tsx, /src/index.css[22m
+[2m11:52:38 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/MyWorkspace.tsx, /src/index.css[22m
+[2m11:52:48 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadDetail.tsx, /src/index.css[22m
+[2m11:52:57 am[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/DataEntry.tsx, /src/index.css[22m
+[2m12:24:00 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:26:19 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m12:26:19 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:27:09 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Team.tsx, /src/index.css[22m
+[2m12:27:09 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:27:39 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m12:27:39 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:28:07 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m12:28:07 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:41:04 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m12:41:04 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:42:48 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m12:42:48 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:43:58 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m12:43:58 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:43:58 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m12:43:58 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/layout/AppShell.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\button.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Dashboard.tsx, /src/pages/Tasks.tsx[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/auth.tsx, /src/index.css, /src/pages/Nurturing.tsx, /src/pages/DataEntry.tsx, /src/pages/Team.tsx, /src/pages/MyWorkspace.tsx, /src/pages/Reports.tsx, /src/pages/Settings.tsx, /src/pages/WeeklyReview.tsx, /src/pages/Dashboard.tsx, /src/pages/Tasks.tsx, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx, /src/pages/Analytics.tsx[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Analytics.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\layout\Sidebar.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\card.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\input.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\skeleton.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\toast.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/auth.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Nurturing.tsx, /src/pages/Team.tsx, /src/pages/Dashboard.tsx, /src/pages/Tasks.tsx, /src/pages/LeadManagement.tsx, /src/pages/LeadDetail.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\card.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\layout\Sidebar.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\input.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\toast.tsx, /@fs/C:\Users\Kunj Mistry\Desktop\studies\Fittree\CRM\web\src\components\ui\skeleton.tsx, /src/pages/MyWorkspace.tsx, /src/pages/Settings.tsx[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/DataEntry.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadDetail.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/LeadManagement.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/MyWorkspace.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Nurturing.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Reports.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tasks.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Team.tsx, /src/index.css[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m changed tsconfig file detected: C:/Users/Kunj Mistry/Desktop/studies/Fittree/CRM/web/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mtsconfig.json[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:44:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/WeeklyReview.tsx, /src/index.css[22m
+[2m12:44:15 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mbackend_log.txt[22m
+[2m12:44:15 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mfrontend_log.txt[22m
+[2m12:44:15 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m12:44:15 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m12:44:15 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m12:44:31 pm[22m [36m[1m[vite][22m[39m changed tsconfig file detected: C:/Users/Kunj Mistry/Desktop/studies/Fittree/CRM/web/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2m12:44:31 pm[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m12:44:31 pm[22m [36m[1m[vite][22m[39m server restarted.

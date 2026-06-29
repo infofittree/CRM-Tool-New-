@@ -1,4 +1,4 @@
-"""SQLAlchemy database connection management."""
+"""SQLAlchemy database connection management — MySQL + SQLite local dev."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from config.settings import MySQLSettings, get_mysql_settings
 
 
 class DatabaseConnection:
-    """Create pooled SQLAlchemy engines and sessions for MySQL."""
+    """Create pooled SQLAlchemy engines and sessions."""
 
     def __init__(self, settings: MySQLSettings | None = None, logger: logging.Logger | None = None) -> None:
         self.settings = settings or get_mysql_settings()
@@ -23,10 +23,22 @@ class DatabaseConnection:
         self.last_error_message: str | None = None
         self.engine = self._create_engine()
         self.session_factory = sessionmaker(bind=self.engine, autoflush=False, autocommit=False, expire_on_commit=False)
+        # Enable WAL mode + foreign keys for SQLite
+        if self.settings.is_sqlite:
+            self._setup_sqlite()
+
+    def _setup_sqlite(self) -> None:
+        with self.engine.connect() as conn:
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            conn.execute(text("PRAGMA foreign_keys=ON"))
+            conn.commit()
 
     def _create_engine(self) -> Engine:
+        url = self.settings.sqlalchemy_url
+        if self.settings.is_sqlite:
+            return create_engine(url, echo=False, future=True)
         return create_engine(
-            self.settings.sqlalchemy_url,
+            url,
             pool_pre_ping=True,
             pool_recycle=self.settings.pool_recycle_seconds,
             pool_size=self.settings.pool_size,
@@ -37,7 +49,9 @@ class DatabaseConnection:
         )
 
     def create_server_engine(self) -> Engine:
-        """Create a temporary engine that connects without selecting a database."""
+        """Create a temporary engine that connects without selecting a database (MySQL only)."""
+        if self.settings.is_sqlite:
+            return self.engine
         return create_engine(
             self.settings.server_sqlalchemy_url,
             pool_pre_ping=True,
@@ -48,7 +62,9 @@ class DatabaseConnection:
         )
 
     def ensure_database_exists(self) -> None:
-        """Create the configured MySQL database if credentials allow it."""
+        """Create the configured database if credentials allow it (MySQL only)."""
+        if self.settings.is_sqlite:
+            return
         server_engine = self.create_server_engine()
         try:
             database_name = self.settings.database.replace("`", "``")
@@ -57,10 +73,6 @@ class DatabaseConnection:
         finally:
             server_engine.dispose()
 
-    # Streamlit control-flow exceptions (st.rerun(), st.stop(), st.switch_page())
-    # are NOT errors — if they fire inside a session_scope block AFTER a write,
-    # the work must still be COMMITTED, not rolled back. These are matched by
-    # class name so the database layer needs no Streamlit import.
     _CONTROL_FLOW_EXC = {"RerunException", "RerunData", "StopException", "StreamlitAPIException"}
 
     @contextmanager
@@ -75,7 +87,6 @@ class DatabaseConnection:
             self.logger.exception("Database operation failed")
             raise
         except BaseException as exc:
-            # Commit on Streamlit reruns/stops; rollback on genuine errors.
             if type(exc).__name__ in self._CONTROL_FLOW_EXC:
                 try:
                     session.commit()
@@ -90,7 +101,7 @@ class DatabaseConnection:
             session.close()
 
     def health_check(self) -> bool:
-        """Verify that MySQL is reachable."""
+        """Verify that the database is reachable."""
         self.last_error_message = None
         try:
             with self.engine.connect() as connection:
@@ -98,7 +109,7 @@ class DatabaseConnection:
             return True
         except SQLAlchemyError as exc:
             self.last_error_message = self.format_connection_error(exc)
-            self.logger.error("MySQL health check failed: %s", self.last_error_message)
+            self.logger.error("Database health check failed: %s", self.last_error_message)
             return False
 
     def dispose(self) -> None:
@@ -106,7 +117,9 @@ class DatabaseConnection:
         self.engine.dispose()
 
     def format_connection_error(self, exc: SQLAlchemyError) -> str:
-        """Create a concise, password-safe message for MySQL connection failures."""
+        """Create a concise, password-safe error message."""
+        if self.settings.is_sqlite:
+            return f"SQLite error: {exc}"
         original = getattr(exc, "orig", exc)
         error_code = getattr(original, "errno", None)
         message = str(original)

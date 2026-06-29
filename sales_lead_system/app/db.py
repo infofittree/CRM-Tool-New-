@@ -21,17 +21,17 @@ def get_db() -> DatabaseConnection:
 # Short TTL keeps data fresh; write actions call clear_data_cache() for instant
 # updates. Keyed by role + full_name so each salesperson's scope caches separately.
 # --------------------------------------------------------------------------- #
-@st.cache_data(ttl=45, show_spinner=False)
+@st.cache_data(ttl=20, show_spinner=False)
 def load_leads_df(role: str, full_name: str, limit: int = 5000):
-    """Cached scoped leads dataframe."""
+    """Cached scoped leads dataframe (20s TTL — stale ok for dashboard, instant on write)."""
     from modules.crm_service import CRMService
     with get_db().session_scope() as session:
         return CRMService(session).leads_dataframe({"role": role, "full_name": full_name}, limit)
 
 
-@st.cache_data(ttl=45, show_spinner=False)
+@st.cache_data(ttl=20, show_spinner=False)
 def load_tasks(role: str, full_name: str, upcoming_days: int = 7, max_today: int = 40):
-    """Cached derived task queue."""
+    """Cached derived task queue (20s TTL)."""
     from modules.crm_service import CRMService
     with get_db().session_scope() as session:
         return CRMService(session).get_tasks({"role": role, "full_name": full_name},

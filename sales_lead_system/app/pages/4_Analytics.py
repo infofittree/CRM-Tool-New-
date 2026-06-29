@@ -1,4 +1,4 @@
-"""Interactive analytics dashboard."""
+"""Interactive analytics dashboard — redesigned with glass chart cards."""
 
 from __future__ import annotations
 
@@ -48,20 +48,30 @@ if status_filter:
 
 col1, col2 = st.columns(2)
 with col1:
+    st.markdown("<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;padding:1rem;box-shadow:var(--crm-shadow-sm);margin-bottom:1rem;'>", unsafe_allow_html=True)
     section_header("Lead Sources", "Where the current pipeline is coming from.")
     st.plotly_chart(style_plotly(px.histogram(filtered, x="lead_source", title="Lead Source Analysis")), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;padding:1rem;box-shadow:var(--crm-shadow-sm);margin-bottom:1rem;'>", unsafe_allow_html=True)
     section_header("Salesperson Mix", "Lead status by assignee.")
     st.plotly_chart(
         style_plotly(px.histogram(filtered, x="assigned_to", color="status", title="Salesperson Performance", color_discrete_map=STATUS_COLORS)),
         use_container_width=True,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 with col2:
+    st.markdown("<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;padding:1rem;box-shadow:var(--crm-shadow-sm);margin-bottom:1rem;'>", unsafe_allow_html=True)
     section_header("Status Distribution", "Current breakdown of lead stages.")
     st.plotly_chart(style_plotly(px.pie(filtered, names="status", title="Lead Status Distribution", color="status", color_discrete_map=STATUS_COLORS)), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;padding:1rem;box-shadow:var(--crm-shadow-sm);margin-bottom:1rem;'>", unsafe_allow_html=True)
     section_header("Country Analysis", "Lead concentration by geography.")
     st.plotly_chart(style_plotly(px.histogram(filtered, x="country", title="Country-wise Lead Analysis")), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 if not followups.empty:
     followups["month"] = pd.to_datetime(followups["next_followup"], errors="coerce").dt.to_period("M").astype(str)
+    st.markdown("<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;padding:1rem;box-shadow:var(--crm-shadow-sm);'>", unsafe_allow_html=True)
     section_header("Monthly Follow-up Trend", "Upcoming and overdue touchpoints by month.")
     st.plotly_chart(style_plotly(px.histogram(followups, x="month", title="Follow-up Completion / Schedule Trend")), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -16,7 +16,10 @@ import streamlit as st
 from app.assets.theme import STATUS_COLORS, style_plotly
 from app.db import ensure_startup, get_db, render_startup_status
 from app.login import render_login
-from app.ui import configure_page, empty_state, page_header, render_sidebar, score_badge, section_header, status_pill
+from app.ui import (
+    configure_page, empty_state, kpi_row, page_header, render_sidebar,
+    score_badge, section_header, status_pill,
+)
 from modules import dashboard_queries
 from modules.clock import today as biz_today
 from modules.crm_service import CRMService
@@ -46,7 +49,6 @@ page_header(
 today = biz_today()
 
 from app.db import load_leads_df, load_tasks, clear_data_cache
-# Cached reads (fast on every rerun); heavy DB work only when cache expires/cleared.
 leads_df = load_leads_df(user["role"], user["full_name"], 5000)
 tasks = load_tasks(user["role"], user["full_name"], 7, 40)
 ts = tasks["summary"]
@@ -57,7 +59,6 @@ with db.session_scope() as session:
     performance_df = dashboard_queries.get_salesperson_stats(session, user)
     activity_df = dashboard_queries.get_recent_activities(session)
 
-    # Band counts from live scores
     bands = {"HOT": 0, "WARM": 0, "NURTURE": 0, "COLD": 0}
     if not leads_df.empty and "lead_score" in leads_df.columns:
         for sc in leads_df["lead_score"].fillna(0):
@@ -68,28 +69,25 @@ with db.session_scope() as session:
     negotiation_n = int((leads_df.get("standard_status") == "Negotiation").sum()) if not leads_df.empty else 0
     completion = round(engagement["today_done"] / (engagement["today_done"] + ts["actionable_today"]) * 100, 0) if (engagement["today_done"] + ts["actionable_today"]) else 0
 
-    # ---------------- TOP KPIs ----------------
-    from app.ui import kpi_row
+    # ── Top KPIs ──
     kpi_row([
         ("Today's Tasks", ts["actionable_today"], "to action now"),
         ("Overdue", ts["overdue"], "missed follow-ups"),
         ("Upcoming 7d", ts["upcoming"], "scheduled"),
-        ("Hot Leads", bands["HOT"], "🔥 90+"),
+        ("Hot Leads", bands["HOT"], "90+ score"),
         ("Negotiation", negotiation_n, "in pipeline"),
         ("Nurturing", metrics["nurturing"], "warm pipeline"),
         ("Converted", metrics["converted"], "won"),
         ("Task Completion", f"{int(completion)}%", f"{engagement['today_done']} done today"),
     ])
 
-    st.divider()
-
-    # ---------------- TODAY'S PRIORITY TASKS ----------------
-    section_header("Today's Priority Tasks", "Highest-scoring leads needing action now — who, why, how, when.")
+    # ── Today's Priority Tasks ──
+    section_header("Today's Priority Tasks", "Highest-scoring leads needing action now.")
     if not tasks["today_capped"]:
-        empty_state("All caught up", "No tasks need action today. Check Upcoming on the Follow-ups page.")
+        empty_state("All caught up", "No tasks need action today.")
     else:
         if ts["overflow"]:
-            st.info(f"Showing top {ts['capped_shown']} of {ts['actionable_today']} by priority. Open the Follow-ups page to work the full queue.")
+            st.info(f"Showing top {ts['capped_shown']} of {ts['actionable_today']} by priority.")
         for task in tasks["today_capped"][:12]:
             band = task["band"].lower()
             cols = st.columns([5, 2, 2])
@@ -101,7 +99,7 @@ with db.session_scope() as session:
                             <span class="crm-task-company">{task['company_name']}</span>
                             <span>{score_badge(task['score'], task['band'])} {status_pill(task['standard_status'])}</span>
                         </div>
-                        <div class="crm-task-action">▶ {task['recommended_action']} · <span style="color:#64748b">{task['due_label']}</span></div>
+                        <div class="crm-task-action">▶ {task['recommended_action']} · <span style="color:var(--crm-muted)">{task['due_label']}</span></div>
                         <div class="crm-task-reason">{task['reason']} <span class='crm-pill category-{task.get('lead_category','C').lower()}'>{task.get('lead_category','C')}</span></div>
                         <div class="crm-task-meta">📋 {task.get('next_action_plan') or 'No action plan set'}</div>
                     </div>
@@ -113,7 +111,6 @@ with db.session_scope() as session:
                 st.write(task.get("phone") or task.get("whatsapp_number") or task.get("email") or "—")
             with cols[2]:
                 if st.button("✅ Mark Done", key=f"dash_done_{task['lead_id']}", use_container_width=True):
-                    from datetime import timedelta
                     service.add_quick_followup(
                         task["lead_id"],
                         {"discussion": "Task completed from dashboard", "next_action": task["recommended_action"],
@@ -123,9 +120,7 @@ with db.session_scope() as session:
                     clear_data_cache()
                     st.rerun()
 
-    st.divider()
-
-    # ---------------- FOLLOW-UP WIDGETS + FUNNEL ----------------
+    # ── Lead Funnel + Pipelines ──
     left, right = st.columns([1.25, 1])
     with left:
         section_header("Lead Funnel", "Pipeline across the standard sales stages.")
@@ -144,21 +139,62 @@ with db.session_scope() as session:
             st.plotly_chart(fig, use_container_width=True)
 
     with right:
-        section_header("Pipelines", "Negotiation and nurturing queues.")
-        st.metric("Negotiation Pipeline", negotiation_n)
-        st.metric("Nurturing Pipeline", metrics["nurturing"])
-        st.metric("Missed Follow-ups", ts["overdue"])
-        st.metric("Upcoming (7d)", ts["upcoming"])
+        section_header("Pipeline Summary", "Key pipeline metrics at a glance.")
+        st.markdown("<div style='display:flex;flex-wrap:wrap;gap:0.75rem;'>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='flex:1;min-width:120px;background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.8rem 1rem;box-shadow:var(--crm-shadow-xs);'>"
+            f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Negotiation</div>"
+            f"<div style='font-size:1.5rem;font-weight:850;color:var(--crm-text);'>{negotiation_n}</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='flex:1;min-width:120px;background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.8rem 1rem;box-shadow:var(--crm-shadow-xs);'>"
+            f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Nurturing</div>"
+            f"<div style='font-size:1.5rem;font-weight:850;color:var(--crm-text);'>{metrics['nurturing']}</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='flex:1;min-width:120px;background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.8rem 1rem;box-shadow:var(--crm-shadow-xs);'>"
+            f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Missed F/U</div>"
+            f"<div style='font-size:1.5rem;font-weight:850;color:var(--crm-text);'>{ts['overdue']}</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='flex:1;min-width:120px;background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.8rem 1rem;box-shadow:var(--crm-shadow-xs);'>"
+            f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Upcoming 7d</div>"
+            f"<div style='font-size:1.5rem;font-weight:850;color:var(--crm-text);'>{ts['upcoming']}</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.divider()
-
-    # ---------------- LEAD QUALITY ----------------
+    # ── Lead Quality Analysis ──
     section_header("Lead Quality Analysis", "Score-band distribution and top geographies.")
     q1, q2, q3, q4 = st.columns(4)
-    q1.metric("🔥 Hot", bands["HOT"])
-    q2.metric("🟠 Warm", bands["WARM"])
-    q3.metric("🟡 Nurture", bands["NURTURE"])
-    q4.metric("🔵 Cold", bands["COLD"])
+    q1.markdown(
+        f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'>"
+        f"<div style='font-size:1.8rem;'>🔥</div><div style='font-size:1.3rem;font-weight:850;'>{bands['HOT']}</div>"
+        f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Hot</div></div>",
+        unsafe_allow_html=True,
+    )
+    q2.markdown(
+        f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'>"
+        f"<div style='font-size:1.8rem;'>🟠</div><div style='font-size:1.3rem;font-weight:850;'>{bands['WARM']}</div>"
+        f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Warm</div></div>",
+        unsafe_allow_html=True,
+    )
+    q3.markdown(
+        f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'>"
+        f"<div style='font-size:1.8rem;'>🟡</div><div style='font-size:1.3rem;font-weight:850;'>{bands['NURTURE']}</div>"
+        f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Nurture</div></div>",
+        unsafe_allow_html=True,
+    )
+    q4.markdown(
+        f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'>"
+        f"<div style='font-size:1.8rem;'>🔵</div><div style='font-size:1.3rem;font-weight:850;'>{bands['COLD']}</div>"
+        f"<div style='font-size:0.72rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Cold</div></div>",
+        unsafe_allow_html=True,
+    )
+
     geo1, geo2 = st.columns(2)
     if not leads_df.empty and "country" in leads_df.columns:
         top_countries = leads_df["country"].dropna().value_counts().head(8).reset_index()
@@ -169,7 +205,7 @@ with db.session_scope() as session:
         by_cont.columns = ["continent", "leads"]
         geo2.plotly_chart(style_plotly(px.pie(by_cont, names="continent", values="leads", title="Leads by Continent"), height=320), use_container_width=True)
 
-    # Lead Source analytics (Patch 5)
+    # ── Lead Source Analytics ──
     if not leads_df.empty and "lead_source" in leads_df.columns:
         section_header("Lead Source Analytics", "Where leads come from and which sources convert.")
         src1, src2 = st.columns(2)
@@ -184,15 +220,15 @@ with db.session_scope() as session:
         else:
             src2.info("Orders-closed-by-source will populate as deals close.")
 
-    # Alibaba Buyer Level analytics (Patch — only when Alibaba leads exist)
+    # ── Alibaba Buyer Quality ──
     if not leads_df.empty and "lead_source" in leads_df.columns:
         ali = leads_df[leads_df["lead_source"] == "Alibaba"].copy()
         if not ali.empty and "buyer_tag" in ali.columns and ali["buyer_tag"].notna().any():
-            section_header("Alibaba Buyer Quality", "Buyer-level distribution and conversion (Alibaba leads only).")
+            section_header("Alibaba Buyer Quality", "Buyer-level distribution and conversion.")
             al1, al2 = st.columns(2)
             lvl = ali["buyer_tag"].fillna("Unrated").value_counts().reindex(["L4", "L3", "L2", "L1", "Unrated"]).dropna().reset_index()
             lvl.columns = ["level", "count"]
-            al1.plotly_chart(style_plotly(px.bar(lvl, x="level", y="count", title="Alibaba Buyer Level Distribution",
+            al1.plotly_chart(style_plotly(px.bar(lvl, x="level", y="count", title="Alibaba Buyer Level",
                             color="level", color_discrete_map={"L4": "#15803d", "L3": "#65a30d", "L2": "#f59e0b", "L1": "#ef4444"}).update_layout(showlegend=False), height=300), use_container_width=True)
             if "standard_status" in ali.columns:
                 conv = ali.groupby("buyer_tag").apply(
@@ -200,11 +236,9 @@ with db.session_scope() as session:
                 ).reindex(["L4", "L3", "L2", "L1"]).dropna().reset_index()
                 conv.columns = ["level", "closed_pct"]
                 if not conv.empty:
-                    al2.plotly_chart(style_plotly(px.bar(conv, x="level", y="closed_pct", title="Conversion % by Alibaba Level"), height=300), use_container_width=True)
+                    al2.plotly_chart(style_plotly(px.bar(conv, x="level", y="closed_pct", title="Conversion % by Level"), height=300), use_container_width=True)
 
-    st.divider()
-
-    # ---------------- SALES TEAM PERFORMANCE ----------------
+    # ── Sales Team Performance + Recent Activity ──
     perf_col, act_col = st.columns([1, 1])
     with perf_col:
         section_header("Sales Team Performance", "Assignments, conversions, and 7-day activity.")
@@ -213,11 +247,12 @@ with db.session_scope() as session:
         else:
             perf = performance_df.copy()
             perf["activity_7d"] = perf["assigned_to"].map(engagement["by_user"]).fillna(0).astype(int)
-            st.dataframe(perf.sort_values("assigned_leads", ascending=False), use_container_width=True, hide_index=True)
+            from app.ui import data_table
+            data_table(perf.sort_values("assigned_leads", ascending=False))
         a1, a2, a3 = st.columns(3)
-        a1.metric("Calls (7d)", engagement["calls"])
-        a2.metric("WhatsApp (7d)", engagement["whatsapp"])
-        a3.metric("Follow-ups (7d)", engagement["followups"])
+        a1.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:10px;padding:0.5rem;text-align:center;'><div style='font-size:1.1rem;font-weight:800;'>{engagement['calls']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Calls (7d)</div></div>", unsafe_allow_html=True)
+        a2.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:10px;padding:0.5rem;text-align:center;'><div style='font-size:1.1rem;font-weight:800;'>{engagement['whatsapp']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>WhatsApp (7d)</div></div>", unsafe_allow_html=True)
+        a3.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:10px;padding:0.5rem;text-align:center;'><div style='font-size:1.1rem;font-weight:800;'>{engagement['followups']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Follow-ups (7d)</div></div>", unsafe_allow_html=True)
     with act_col:
         section_header("Recent Activity", "Latest audit trail from imports and actions.")
         if activity_df.empty:

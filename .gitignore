@@ -19,6 +19,9 @@ __pycache__/
 venv/
 env/
 
+# ─── Node ─────────────────────────────────────────────────
+node_modules/
+
 # ─── Databases (local SQLite, may contain customer PII) ───
 *.db
 *.db.bak
@@ -32,6 +35,9 @@ sales_lead_system/logs/
 sales_lead_system/exports/
 sales_lead_system/outputs/
 outputs/
+
+# ─── Logs ─────────────────────────────────────────────────
+*.log
 
 # ─── Editor / OS ──────────────────────────────────────────
 .vscode/

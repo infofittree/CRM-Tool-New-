@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Select, or_, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from database.models import ActivityLog, DuplicateReport, FollowUp, Lead
 from modules.validation_engine import ValidationEngine
@@ -53,7 +53,7 @@ class LeadCRUD:
 
     def get_all_leads(self, session: Session, page: int = 1, page_size: int = 100, include_deleted: bool = False) -> list[Lead]:
         """Fetch paginated leads."""
-        stmt = select(Lead).options(selectinload(Lead.followups)).order_by(Lead.updated_at.desc())
+        stmt = select(Lead).order_by(Lead.updated_at.desc())
         if not include_deleted:
             stmt = stmt.where(Lead.deleted_at.is_(None))
         return list(session.scalars(self._paginate(stmt, page, page_size)))
@@ -82,22 +82,30 @@ class LeadCRUD:
             stmt = stmt.where(Lead.deleted_at.is_(None))
         return list(session.scalars(self._paginate(stmt.order_by(Lead.updated_at.desc()), page, page_size)))
 
-    @staticmethod
-    def _clean_model_payload(model: type, payload: dict[str, Any]) -> dict[str, Any]:
+    _COLUMN_CACHE: dict[str, list[dict]] = {}
+
+    @classmethod
+    def _clean_model_payload(cls, model: type, payload: dict[str, Any]) -> dict[str, Any]:
+        cache_key = model.__tablename__
+        if cache_key not in cls._COLUMN_CACHE:
+            cls._COLUMN_CACHE[cache_key] = [
+                {"name": col.name, "nullable": col.nullable, "default": col.default}
+                for col in model.__table__.columns
+            ]
         result: dict[str, Any] = {}
-        for col in model.__table__.columns:
-            if col.name not in payload:
+        for col in cls._COLUMN_CACHE[cache_key]:
+            if col["name"] not in payload:
                 continue
-            value = payload[col.name]
-            # Never pass None for a NOT NULL column — apply Python default or skip
-            if value is None and not col.nullable:
-                if col.default is not None and callable(getattr(col.default, "arg", None)):
-                    value = col.default.arg(None)
-                elif col.default is not None and hasattr(col.default, "arg"):
-                    value = col.default.arg
+            value = payload[col["name"]]
+            if value is None and not col["nullable"]:
+                default = col["default"]
+                if default is not None and callable(getattr(default, "arg", None)):
+                    value = default.arg(None)
+                elif default is not None and hasattr(default, "arg"):
+                    value = default.arg
                 else:
-                    continue  # omit → MySQL server_default applies
-            result[col.name] = value
+                    continue
+            result[col["name"]] = value
         return result
 
     @staticmethod

@@ -32,11 +32,7 @@ today = biz_today()
 
 
 def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:
-    """Render one task card with Mark Done / Reschedule / Add Note actions.
-
-    ``prefix`` namespaces widget keys so the same lead can appear in more than
-    one tab (e.g. overdue leads show in both Today and Missed) without colliding.
-    """
+    """Render one task card with Mark Done / Reschedule / Add Note actions."""
     key = f"{prefix}_{task['lead_id']}"
     band = task["band"].lower()
     contact_bits = []
@@ -55,7 +51,7 @@ def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:
                 <span class="crm-task-company">{task['company_name']}</span>
                 <span>{score_badge(task['score'], task['band'])} {status_pill(task['standard_status'])}</span>
             </div>
-            <div class="crm-task-action">▶ {task['recommended_action']} &nbsp;·&nbsp; <span style="color:#64748b">{task['due_label']}</span></div>
+            <div class="crm-task-action">▶ {task['recommended_action']} &nbsp;·&nbsp; <span style="color:var(--crm-muted)">{task['due_label']}</span></div>
             <div class="crm-task-reason">{task['reason']}</div>
             <div class="crm-task-meta">{contact_line}</div>
             <div class="crm-task-meta">Last contact: {task['last_contact_date'] or '—'} &nbsp;|&nbsp; 📋 {task.get('next_action_plan') or 'No action plan set'}</div>
@@ -78,57 +74,80 @@ def render_task(service: CRMService, task: dict, prefix: str = "t") -> None:
             st.rerun()
         new_date = c2.date_input("Reschedule to", value=today + timedelta(days=2), key=f"resdate_{key}")
         if c2.button("📅 Reschedule", key=f"res_{key}", use_container_width=True):
-            service.reschedule_followup(task["lead_id"], new_date, user, note="Rescheduled from task list")
+            service.add_quick_followup(
+                task["lead_id"],
+                {"discussion": f"Rescheduled from {task['due_label']}", "next_action": task["recommended_action"],
+                 "next_followup": new_date, "mode": task.get("mode")},
+                user,
+            )
             clear_data_cache()
             st.success(f"Rescheduled to {new_date}.")
             st.rerun()
-        note = st.text_input("Add a note", key=f"note_{key}")
-        if st.button("📝 Add Note", key=f"addnote_{key}", use_container_width=True):
-            if note.strip():
-                service.append_note(task["lead_id"], note.strip(), user)
+        if c1.button("📝 Add Note", key=f"note_{key}", use_container_width=True):
+            st.session_state[f"note_text_{key}"] = True
+        if st.session_state.get(f"note_text_{key}"):
+            note = st.text_area("Note", key=f"ntext_{key}", placeholder="What happened?")
+            if st.button("Save Note", key=f"nsave_{key}"):
+                service.add_quick_followup(
+                    task["lead_id"],
+                    {"discussion": note, "next_action": task["recommended_action"],
+                     "next_followup": new_date if 'new_date' in dir() else today + timedelta(days=3),
+                     "mode": task.get("mode")},
+                    user,
+                )
+                st.session_state.pop(f"note_text_{key}", None)
                 clear_data_cache()
-                st.success("Note added.")
+                st.success("Note saved.")
                 st.rerun()
-            else:
-                st.warning("Type a note first.")
 
+
+db = get_db()
+startup_status = ensure_startup(db)
+render_startup_status(startup_status)
+if startup_status.errors:
+    st.error(startup_status.errors[0])
+    st.stop()
 
 from app.db import load_tasks
-_tasks_cached = load_tasks(user["role"], user["full_name"], 7, 40)
+tasks = load_tasks(user["role"], user["full_name"], 14, 200)
+ts = tasks["summary"]
+
+kpi_col1, kpi_col2, kpi_col3, kpi_col4, kpi_col5 = st.columns(5)
+kpi_col1.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'><div style='font-size:1.4rem;font-weight:850;color:var(--crm-text);'>{ts['actionable_today']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Today</div></div>", unsafe_allow_html=True)
+kpi_col2.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'><div style='font-size:1.4rem;font-weight:850;color:var(--crm-danger);'>{ts['overdue']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Overdue</div></div>", unsafe_allow_html=True)
+kpi_col3.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'><div style='font-size:1.4rem;font-weight:850;color:var(--crm-text);'>{ts['upcoming']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Upcoming</div></div>", unsafe_allow_html=True)
+kpi_col4.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'><div style='font-size:1.4rem;font-weight:850;color:var(--crm-text);'>{ts['capped_shown']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Showing</div></div>", unsafe_allow_html=True)
+kpi_col5.markdown(f"<div style='background:var(--crm-card);border:1px solid var(--crm-border);border-radius:12px;padding:0.7rem;text-align:center;'><div style='font-size:1.4rem;font-weight:850;color:var(--crm-text);'>{ts['overflow']}</div><div style='font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;letter-spacing:0.3px;font-weight:700;'>Overflow</div></div>", unsafe_allow_html=True)
+
+tabs = st.tabs(["📋 Today", "⏰ Overdue", "📅 Upcoming (7d)", "🗓️ All (14d)"])
+
 with db.session_scope() as session:
     service = CRMService(session)
-    tasks = _tasks_cached
-    s = tasks["summary"]
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Actionable Today", s["actionable_today"])
-    m2.metric("Overdue (Missed)", s["overdue"])
-    m3.metric("Upcoming (7d)", s["upcoming"])
-    m4.metric("Hot / Warm", f"{s['hot']} / {s['warm']}")
-
-    tab_today, tab_upcoming, tab_missed = st.tabs(
-        [f"🔴 Today's Tasks ({s['actionable_today']})", f"🗓️ Upcoming ({s['upcoming']})", f"⚠️ Missed / Overdue ({s['overdue']})"]
-    )
-
-    with tab_today:
-        st.caption("Everything needing action now — overdue + due today, highest score first. Completing a task removes it from this list.")
-        if s["overflow"]:
-            st.info(f"Showing top {s['capped_shown']} by priority. {s['overflow']} more queued — clear these first to protect focus.")
+    with tabs[0]:
         if not tasks["today_capped"]:
             empty_state("All caught up", "No tasks need action today.")
-        for task in tasks["today_capped"]:
-            render_task(service, task, prefix="today")
+        else:
+            for task in tasks["today_capped"]:
+                render_task(service, task, "tod")
 
-    with tab_upcoming:
-        st.caption("Scheduled within the next 7 days (tomorrow → +7).")
-        if not tasks["upcoming"]:
-            empty_state("Nothing upcoming", "No future-dated follow-ups in the next 7 days.")
-        for task in tasks["upcoming"][:40]:
-            render_task(service, task, prefix="upcoming")
+    with tabs[1]:
+        if not tasks["overdue_list"]:
+            empty_state("Nothing overdue", "Great work staying on top.")
+        else:
+            for task in tasks["overdue_list"]:
+                render_task(service, task, "ovr")
 
-    with tab_missed:
-        st.caption("Overdue items — these also appear in Today's Tasks but are flagged here for visibility.")
-        if not tasks["overdue"]:
-            empty_state("Nothing overdue", "No missed follow-ups.")
-        for task in tasks["overdue"][:40]:
-            render_task(service, task, prefix="missed")
+    with tabs[2]:
+        if not tasks["upcoming_list"]:
+            empty_state("Nothing upcoming", "Check back after scheduling more follow-ups.")
+        else:
+            for task in tasks["upcoming_list"]:
+                render_task(service, task, "upc")
+
+    with tabs[3]:
+        if not tasks["all_list"]:
+            empty_state("No tasks in the next 14 days", "Schedule follow-ups to build the queue.")
+        else:
+            for task in tasks["all_list"]:
+                render_task(service, task, "all")

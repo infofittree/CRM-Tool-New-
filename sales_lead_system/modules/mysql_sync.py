@@ -11,7 +11,7 @@ from typing import Any
 
 import pandas as pd
 from openpyxl.styles import Font, PatternFill
-from sqlalchemy import select
+from sqlalchemy import bindparam, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from config.settings import BACKUP_DIR, EXPORT_DIR
@@ -127,7 +127,7 @@ class MySQLSyncEngine:
         self.duplicates = DuplicateReportCRUD()
 
     def import_cleaned_excel(self, cleaned_file: Path, user_name: str = "system") -> SyncSummary:
-        """Insert or update MySQL rows from a cleaned Phase 1 workbook."""
+        """Insert or update MySQL rows from a cleaned Phase 1 workbook using bulk operations."""
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         summary = SyncSummary(run_id=run_id, source_file=str(cleaned_file))
         self.backup_database_snapshot(run_id)
@@ -158,127 +158,81 @@ class MySQLSyncEngine:
                 for item in session.scalars(select(OrderTracker))
             }
 
+            # Phase 1 — classify all rows (validate + dedup) before committing anything
+            to_insert: list[dict[str, Any]] = []
+            to_update: list[dict[str, Any]] = []
+            activity_logs: list[dict[str, Any]] = []
             for row_number, row in enumerate(leads_df.to_dict("records"), start=2):
                 payload = self._clean_payload(row, LEAD_COLUMNS)
                 result = self.validator.validate_lead_payload(payload)
                 if not result.is_valid:
                     summary.failed_rows += 1
                     summary.errors.append({"row": row_number, "lead_id": payload.get("lead_id"), "errors": result.errors})
-                    self.logger.warning("Validation failed for lead row %s: %s", row_number, result.errors)
                     continue
 
-                try:
-                    lead_id = str(payload["lead_id"])
-                    existing = existing_by_id.get(lead_id)
-                    duplicate_company_id = existing_company.get(self._norm(payload.get("company_name")))
-                    duplicate_email_id = existing_email.get(self._norm(payload.get("email")))
+                lead_id = str(payload["lead_id"])
+                existing = existing_by_id.get(lead_id)
 
-                    if existing is None and duplicate_company_id and duplicate_company_id != lead_id:
+                if existing is None:
+                    dup_company = existing_company.get(self._norm(payload.get("company_name")))
+                    if dup_company and dup_company != lead_id:
                         summary.skipped_rows += 1
-                        summary.errors.append(
-                            {
-                                "row": row_number,
-                                "lead_id": lead_id,
-                                "errors": [f"duplicate company already exists as {duplicate_company_id}"],
-                            }
-                        )
+                        summary.errors.append({"row": row_number, "lead_id": lead_id, "errors": [f"duplicate company as {dup_company}"]})
                         continue
-                    if existing is None and duplicate_email_id and duplicate_email_id != lead_id:
+                    dup_email = existing_email.get(self._norm(payload.get("email")))
+                    if dup_email and dup_email != lead_id:
                         summary.skipped_rows += 1
-                        summary.errors.append(
-                            {
-                                "row": row_number,
-                                "lead_id": lead_id,
-                                "errors": [f"duplicate email already exists as {duplicate_email_id}"],
-                            }
-                        )
+                        summary.errors.append({"row": row_number, "lead_id": lead_id, "errors": [f"duplicate email as {dup_email}"]})
                         continue
+                    to_insert.append(payload)
+                    activity_logs.append({"action": "IMPORT_LEAD", "user_name": user_name, "lead_id": lead_id})
+                elif self._has_changes(existing, payload):
+                    to_update.append(payload)
+                    activity_logs.append({"action": "UPDATE_FROM_EXCEL", "user_name": user_name, "lead_id": lead_id})
+                else:
+                    summary.skipped_rows += 1
 
-                    if existing is None:
-                        lead = self.leads.create_lead(session, payload)
-                        existing_by_id[lead.lead_id] = lead
-                        existing_company[self._norm(lead.company_name)] = lead.lead_id
-                        if lead.email:
-                            existing_email[self._norm(lead.email)] = lead.lead_id
-                        summary.inserted_rows += 1
-                        self.activity.log_activity(session, "IMPORT_LEAD", user_name, lead.lead_id)
-                    elif self._has_changes(existing, payload):
-                        self.leads.update_lead(session, lead_id, payload)
-                        summary.updated_rows += 1
-                        self.activity.log_activity(session, "UPDATE_FROM_EXCEL", user_name, lead_id)
-                    else:
-                        summary.skipped_rows += 1
-                except (SQLAlchemyError, ValueError, LookupError) as exc:
-                    summary.failed_rows += 1
-                    summary.errors.append({"row": row_number, "lead_id": payload.get("lead_id"), "errors": [str(exc)]})
-                    self.logger.exception("Failed to import lead row %s", row_number)
-
-            try:
+            # Phase 2 — bulk insert new leads
+            if to_insert:
+                session.execute(Lead.__table__.insert().prefix_with("IGNORE"), to_insert)
                 session.flush()
-            except SQLAlchemyError as flush_exc:
-                session.rollback()
-                self.logger.error("Flush failed — rolling back and retrying row-by-row: %s", flush_exc)
-                # Retry: insert each lead individually so one conflict doesn't abort all
-                for row_number, row in enumerate(leads_df.to_dict("records"), start=2):
-                    payload = self._clean_payload(row, LEAD_COLUMNS)
-                    try:
-                        with self.db.session_scope() as retry_session:
-                            lead_id = str(payload.get("lead_id", ""))
-                            existing = retry_session.get(Lead, lead_id) if lead_id else None
-                            if existing is None:
-                                self.leads.create_lead(retry_session, payload)
-                                summary.inserted_rows += 1
-                            elif self._has_changes(existing, payload):
-                                self.leads.update_lead(retry_session, lead_id, payload)
-                                summary.updated_rows += 1
-                    except (SQLAlchemyError, ValueError, LookupError) as exc:
-                        summary.failed_rows += 1
-                        summary.errors.append({"row": row_number, "lead_id": payload.get("lead_id"), "errors": [str(exc)]})
-                # Re-open session for followups/orders
-                with self.db.session_scope() as session:
-                    for row in followups_df.to_dict("records"):
-                        payload = self._clean_payload(row, FOLLOWUP_COLUMNS)
-                        key = self._followup_key(payload)
-                        if payload.get("lead_id") and key not in set():
-                            try:
-                                self.followups.add_followup(session, payload)
-                                summary.followups_inserted += 1
-                            except (SQLAlchemyError, ValueError):
-                                pass
-                    for row in orders_df.to_dict("records"):
-                        payload = self._clean_payload(row, ORDER_COLUMNS)
-                        if payload.get("lead_id") or payload.get("legacy_buyer_id"):
-                            try:
-                                session.add(OrderTracker(**{c: payload.get(c) for c in ORDER_COLUMNS}))
-                                summary.orders_inserted += 1
-                            except (SQLAlchemyError, ValueError):
-                                pass
-                summary.report_path = str(self._write_sync_report(summary))
-                return summary
+                for log in activity_logs:
+                    if log["action"] == "IMPORT_LEAD":
+                        summary.inserted_rows += 1
 
+            # Phase 3 — bulk update existing leads
+            if to_update:
+                for payload in to_update:
+                    session.execute(
+                        Lead.__table__.update().where(Lead.lead_id == bindparam("_lead_id")),
+                        [{**payload, "_lead_id": payload["lead_id"]}],
+                    )
+                    summary.updated_rows += 1
+
+            # Phase 4 — bulk insert follow-ups
+            followup_inserts = []
             for row in followups_df.to_dict("records"):
                 payload = self._clean_payload(row, FOLLOWUP_COLUMNS)
                 key = self._followup_key(payload)
-                if payload.get("lead_id") in existing_by_id and key not in existing_followups:
-                    try:
-                        followup = self.followups.add_followup(session, payload)
-                        existing_followups.add(self._followup_key(followup))
-                        summary.followups_inserted += 1
-                    except (SQLAlchemyError, ValueError, LookupError) as exc:
-                        self.logger.warning("Skipping followup row: %s", exc)
+                if payload.get("lead_id") and key not in existing_followups:
+                    followup_inserts.append(payload)
+            if followup_inserts:
+                session.execute(FollowUp.__table__.insert().prefix_with("IGNORE"), followup_inserts)
+            summary.followups_inserted = len(followup_inserts)
 
+            # Phase 5 — bulk insert orders
+            order_inserts = []
             for row in orders_df.to_dict("records"):
                 payload = self._clean_payload(row, ORDER_COLUMNS)
                 key = self._order_key(payload)
                 if (payload.get("lead_id") in existing_by_id or payload.get("legacy_buyer_id")) and key not in existing_orders:
-                    try:
-                        order = OrderTracker(**{column: payload.get(column) for column in ORDER_COLUMNS})
-                        session.add(order)
-                        existing_orders.add(self._order_key(order))
-                        summary.orders_inserted += 1
-                    except (SQLAlchemyError, ValueError) as exc:
-                        self.logger.warning("Skipping order row: %s", exc)
+                    order_inserts.append({c: payload.get(c) for c in ORDER_COLUMNS})
+            if order_inserts:
+                session.execute(OrderTracker.__table__.insert().prefix_with("IGNORE"), order_inserts)
+            summary.orders_inserted = len(order_inserts)
 
+            # Phase 6 — persist activity logs and duplicate reports
+            session.execute(ActivityLog.__table__.insert(), activity_logs)
             summary.duplicate_reports = self._persist_duplicate_reports(session, duplicate_df, set(existing_by_id))
 
         summary.report_path = str(self._write_sync_report(summary))

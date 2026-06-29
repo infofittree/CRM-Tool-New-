@@ -1,4 +1,4 @@
-"""Sales team performance page."""
+"""Sales team performance page — redesigned with leaderboard cards."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ if str(ROOT_DIR) not in sys.path:
 import streamlit as st
 
 from app.db import ensure_startup, get_db, render_startup_status
-from app.ui import configure_page, empty_state, page_header, require_login, section_header
+from app.ui import configure_page, data_table, empty_state, page_header, require_login, section_header
 from modules import dashboard_queries
 
 
@@ -36,11 +36,7 @@ if leads.empty or perf.empty:
 
 section_header("Leaderboard", "Top performers sorted by conversions and conversion rate.")
 top = perf.sort_values(["conversions", "conversion_rate"], ascending=False).head(3)
-st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
-st.dataframe(top, use_container_width=True, hide_index=True)
-st.markdown("</div>", unsafe_allow_html=True)
+data_table(top)
 
 section_header("Team Details", "Operational workload across the team.")
-st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
-st.dataframe(perf.sort_values("assigned_leads", ascending=False), use_container_width=True, hide_index=True)
-st.markdown("</div>", unsafe_allow_html=True)
+data_table(perf.sort_values("assigned_leads", ascending=False))

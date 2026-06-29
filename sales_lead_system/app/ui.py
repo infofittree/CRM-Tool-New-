@@ -1,4 +1,4 @@
-"""Shared Streamlit UI helpers."""
+"""Shared Streamlit UI helpers — modern design system components."""
 
 from __future__ import annotations
 
@@ -19,39 +19,18 @@ SYSTEM_NAME = "FitTree CRM"
 
 ROLE_ACCESS = {
     "Admin": {
-        "Dashboard",
-        "Lead Management",
-        "Followups",
-        "My Workspace",
-        "Nurturing Leads",
-        "Analytics",
-        "Sales Team",
-        "Reports",
-        "Weekly Review",
-        "Settings",
-        "Data Entry",
+        "Dashboard", "Lead Management", "Followups", "My Workspace",
+        "Nurturing Leads", "Analytics", "Sales Team", "Reports",
+        "Weekly Review", "Settings", "Data Entry",
     },
     "Manager": {
-        "Dashboard",
-        "Lead Management",
-        "Followups",
-        "My Workspace",
-        "Nurturing Leads",
-        "Analytics",
-        "Sales Team",
-        "Reports",
-        "Weekly Review",
-        "Data Entry",
+        "Dashboard", "Lead Management", "Followups", "My Workspace",
+        "Nurturing Leads", "Analytics", "Sales Team", "Reports",
+        "Weekly Review", "Data Entry",
     },
     "Salesperson": {
-        "Dashboard",
-        "Lead Management",
-        "Followups",
-        "My Workspace",
-        "Nurturing Leads",
-        "Reports",
-        "Weekly Review",
-        "Data Entry",
+        "Dashboard", "Lead Management", "Followups", "My Workspace",
+        "Nurturing Leads", "Reports", "Weekly Review", "Data Entry",
     },
 }
 
@@ -84,10 +63,29 @@ def render_sidebar(user: dict) -> None:
     """Render user context and logout button."""
     with st.sidebar:
         render_brand_header()
-        st.caption("Signed in")
-        st.write(f"**{user['full_name']}**")
-        st.write(user["role"])
-        if st.button("Logout", use_container_width=True):
+        st.markdown(
+            f"""
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        padding:0.75rem 0.5rem 0.5rem;border-bottom:1px solid var(--crm-border);
+                        margin-bottom:0.75rem;">
+                <div>
+                    <div style="font-size:0.7rem;color:var(--crm-muted);text-transform:uppercase;
+                                letter-spacing:0.3px;font-weight:700;">Signed in</div>
+                    <div style="font-weight:700;color:var(--crm-text);font-size:0.88rem;">
+                        {escape(user.get('full_name', user['username']))}</div>
+                    <div style="font-size:0.75rem;color:var(--crm-primary);font-weight:600;">
+                        {escape(user['role'])}</div>
+                </div>
+                <div style="width:36px;height:36px;border-radius:50%;
+                            background:linear-gradient(135deg,var(--crm-primary),var(--crm-accent));
+                            color:white;display:grid;place-items:center;font-weight:800;font-size:0.9rem;">
+                    {escape(user.get('full_name', user['username'])[0].upper())}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Logout", use_container_width=True, type="secondary"):
             st.session_state.clear()
             st.rerun()
 
@@ -113,7 +111,7 @@ def render_brand_header() -> None:
 
 
 def page_header(title: str, subtitle: str, eyebrow: str = "CRM Workspace") -> None:
-    """Render a premium page header."""
+    """Render a premium page header with decorative accent."""
     st.markdown(
         f"""
         <div class="crm-page-hero">
@@ -133,6 +131,15 @@ def section_header(title: str, subtitle: str | None = None) -> None:
     subtitle_html = f"<div class='crm-section-subtitle'>{escape(subtitle)}</div>" if subtitle else ""
     st.markdown(
         f"<div class='crm-section-title'>{escape(title)}</div>{subtitle_html}",
+        unsafe_allow_html=True,
+    )
+
+
+def section_card(content: str, title: str | None = None) -> None:
+    """Render content inside a glass card section wrapper."""
+    title_html = f"<div class='crm-section-title'>{escape(title)}</div>" if title else ""
+    st.markdown(
+        f"<div class='crm-section'>{title_html}{content}</div>",
         unsafe_allow_html=True,
     )
 
@@ -167,7 +174,7 @@ def priority_pill(value: str | None) -> str:
 
 
 def score_badge(score: float | int | None, band: str | None = None) -> str:
-    """Return HTML for a lead-score badge with HOT/WARM/NURTURE/COLD color + emoji."""
+    """Return HTML for a lead-score badge with HOT/WARM/NURTURE/COLD color."""
     try:
         value = float(score) if score is not None else 0.0
     except (TypeError, ValueError):
@@ -183,11 +190,11 @@ def score_badge(score: float | int | None, band: str | None = None) -> str:
             band = "COLD"
     emoji = {"HOT": "🔥", "WARM": "🟠", "NURTURE": "🟡", "COLD": "🔵"}.get(band, "")
     css = "score-" + band.lower()
-    return f"<span class='crm-pill {css}'>{emoji} {int(round(value))} · {escape(band)}</span>"
+    return f"<span class='crm-pill {css}'>{emoji} {int(round(value))} &middot; {escape(band)}</span>"
 
 
 def kpi_row(metrics: list[tuple[str, str | int | float, str | None]]) -> None:
-    """Render a row of KPI cards."""
+    """Render a row of KPI cards with gradient accent bars."""
     cards = []
     for label, value, delta in metrics:
         icon, color = KPI_META.get(label, ("", "#4F46E5"))
@@ -203,3 +210,29 @@ def kpi_row(metrics: list[tuple[str, str | int | float, str | None]]) -> None:
             "</div>"
         )
     st.markdown(f"<div class='crm-kpi-grid'>{''.join(cards)}</div>", unsafe_allow_html=True)
+
+
+def metric_card(label: str, value: str | int | float, color: str = "#4F46E5") -> str:
+    """Return HTML for a compact inline metric card."""
+    return (
+        f"<div class='crm-kpi-compact' style='--kpi-color:{color}'>"
+        f"<div class='crm-kpi-compact-label'>{escape(str(label))}</div>"
+        f"<div class='crm-kpi-compact-value'>{escape(str(value))}</div>"
+        f"</div>"
+    )
+
+
+def render_metric_row(metrics: list[tuple[str, str | int | float, str]]) -> None:
+    """Render a horizontal row of compact metric cards."""
+    cards = "".join(metric_card(label, value, color) for label, value, color in metrics)
+    st.markdown(
+        f"<div style='display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.8rem;'>{cards}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def data_table(df, **kwargs) -> None:
+    """Render a DataFrame inside the crm-table-shell wrapper."""
+    st.markdown("<div class='crm-table-shell'>", unsafe_allow_html=True)
+    st.dataframe(df, use_container_width=True, hide_index=True, **kwargs)
+    st.markdown("</div>", unsafe_allow_html=True)

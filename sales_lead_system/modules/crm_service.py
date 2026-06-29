@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 from rapidfuzz import fuzz
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.security import hash_password
@@ -16,6 +16,7 @@ from database.crud import ActivityLogCRUD, FollowUpCRUD, LeadCRUD
 from database.models import ALLOWED_STATUSES, EngagementEvent, Lead, LeadSequence, PRIORITY_LEVELS, User
 from modules import dashboard_queries
 from modules.dropdown_config import option_list
+from modules.status_taxonomy import CANONICAL_STATUSES
 from modules.validation_engine import EMAIL_PATTERN, ValidationEngine
 from modules.clock import today as biz_today
 
@@ -65,20 +66,13 @@ class CRMService:
         self.validator = ValidationEngine()
 
     def generate_lead_id(self, year: int | None = None) -> str:
-        """Generate a collision-proof lead ID.
-
-        After a bulk import the sequence counter can lag behind the real max
-        lead number, causing duplicate-PK failures. We reconcile the counter with
-        the actual highest existing FT-YYYY-NNNN before issuing the next id.
-        """
-        import re
+        """Generate a collision-proof lead ID using SQL MAX (zero-padded => lexicographic = numeric)."""
         year = year or biz_today().year
         prefix = f"FT-{year}-"
-        max_existing = 0
-        for lid in self.session.scalars(select(Lead.lead_id).where(Lead.lead_id.like(prefix + "%"))):
-            m = re.match(rf"FT-{year}-(\d+)$", str(lid))
-            if m:
-                max_existing = max(max_existing, int(m.group(1)))
+        max_id = self.session.scalar(
+            select(func.max(Lead.lead_id)).where(Lead.lead_id.like(prefix + "%"))
+        )
+        max_existing = int(max_id.split("-")[-1]) if max_id else 0
 
         sequence = self.session.get(LeadSequence, year)
         if sequence is None:
@@ -149,15 +143,16 @@ class CRMService:
                         "discussion": cleaned.get("last_discussion"),
                         "next_action": cleaned.get("next_action"),
                         "next_followup": cleaned.get("next_follow_up"),
+                        "mode": cleaned.get("followup_mode"),
                         "updated_by": user["full_name"],
                     },
                 )
             self.activity.log_activity(self.session, "CREATE_LEAD_FROM_DATA_ENTRY", user["full_name"], lead.lead_id)
             return SaveResult(True, "Lead saved successfully.", lead_id=lead.lead_id)
-        except Exception as exc:  # Phase 7: never fail silently
+        except Exception as exc:
             import traceback as _tb
             self.log_error("save_lead_from_entry", str(exc), user, _tb.format_exc())
-            return SaveResult(False, f"Save failed: {exc}")
+            return SaveResult(False, "Failed to save lead. Please check your input and try again.")
 
     def add_quick_followup(self, lead_id: str, payload: dict[str, Any], user: dict) -> None:
         """Add follow-up, update lead state, and audit."""
@@ -194,7 +189,7 @@ class CRMService:
             # Recompute score live after status change
             try:
                 from modules.lead_scoring import score_lead
-                lead.lead_score = score_lead({c.name: getattr(lead, c.name) for c in Lead.__table__.columns})[0]
+                lead.lead_score = score_lead(CRMService._lead_dict(lead))[0]
             except Exception:
                 pass
         # Record an engagement event so call/WhatsApp/email history accrues
@@ -297,7 +292,7 @@ class CRMService:
         lead = self.session.get(Lead, lead_id)
         if lead is None:
             return False
-        snapshot = {c.name: getattr(lead, c.name) for c in Lead.__table__.columns}
+        snapshot = CRMService._lead_dict(lead)
         self.session.add(DeletedLead(
             lead_id=lead_id,
             company_name=lead.company_name,
@@ -350,7 +345,7 @@ class CRMService:
             # recompute score if status changed
             if any(c.startswith("status:") for c in changes):
                 from modules.lead_scoring import score_lead
-                lead.lead_score = score_lead({c.name: getattr(lead, c.name) for c in Lead.__table__.columns})[0]
+                lead.lead_score = score_lead(CRMService._lead_dict(lead))[0]
             self.activity.log_activity(
                 self.session, "EDIT_LEAD", user["full_name"], lead_id, remarks="; ".join(changes)[:1000],
             )
@@ -388,26 +383,44 @@ class CRMService:
             pass  # logging must never raise
 
     def find_duplicates(self, payload: dict[str, Any], threshold: int = 88) -> list[dict[str, Any]]:
-        """Find likely existing duplicates by email, phone, and fuzzy company name."""
+        """Find likely existing duplicates by indexed email/phone first, then fuzzy company name on a filtered set."""
         company = str(payload.get("company_name") or "")
         email = str(payload.get("email") or "").lower()
         phone = str(payload.get("phone") or "")
-        stmt = select(Lead).where(Lead.deleted_at.is_(None))
-        duplicates = []
-        for lead in self.session.scalars(stmt):
-            reasons = []
-            score = fuzz.token_set_ratio(company, lead.company_name or "") if company and lead.company_name else 0
-            if score >= threshold:
-                reasons.append(f"company similarity {score}")
-            if email and lead.email and email == lead.email.lower():
-                reasons.append("same email")
-                score = max(score, 100)
-            if phone and lead.phone and phone == lead.phone:
-                reasons.append("same phone")
-                score = max(score, 100)
-            if reasons:
-                duplicates.append({"lead_id": lead.lead_id, "company_name": lead.company_name, "similarity": score, "reasons": ", ".join(reasons)})
-        return sorted(duplicates, key=lambda item: item["similarity"], reverse=True)[:5]
+        seen_ids: set[str] = set()
+        duplicates: list[dict[str, Any]] = []
+
+        # Phase 1 — indexed exact matches (fast, hits indexes on email/phone)
+        if email:
+            for lead in self.session.scalars(
+                select(Lead).where(Lead.deleted_at.is_(None), func.lower(Lead.email) == email).limit(10)
+            ):
+                seen_ids.add(lead.lead_id)
+                duplicates.append({"lead_id": lead.lead_id, "company_name": lead.company_name, "similarity": 100, "reasons": "same email"})
+        if phone:
+            for lead in self.session.scalars(
+                select(Lead).where(Lead.deleted_at.is_(None), Lead.phone == phone).limit(10)
+            ):
+                if lead.lead_id not in seen_ids:
+                    seen_ids.add(lead.lead_id)
+                    duplicates.append({"lead_id": lead.lead_id, "company_name": lead.company_name, "similarity": 100, "reasons": "same phone"})
+
+        # Phase 2 — fuzzy company name on a limited candidate set (top 200 recently updated)
+        if company and len(company) >= 3:
+            filters = [Lead.deleted_at.is_(None)]
+            if seen_ids:
+                filters.append(Lead.lead_id.notin_(seen_ids))
+            candidates = self.session.scalars(
+                select(Lead).where(*filters).order_by(Lead.updated_at.desc()).limit(200)
+            ).all()
+            for lead in candidates:
+                if lead.company_name:
+                    score = int(fuzz.token_set_ratio(company, lead.company_name))
+                    if score >= threshold:
+                        duplicates.append({"lead_id": lead.lead_id, "company_name": lead.company_name, "similarity": score, "reasons": f"company similarity {score}"})
+
+        duplicates.sort(key=lambda item: item["similarity"], reverse=True)
+        return duplicates[:5]
 
     def create_user(self, username: str, password: str, full_name: str, role: str) -> None:
         """Create a CRM user."""
@@ -418,7 +431,7 @@ class CRMService:
         from sqlalchemy import func
         leads_n = self.session.scalar(
             select(func.count()).select_from(Lead).where(
-                func.lower(func.trim(Lead.assigned_to)) == (full_name or "").strip().lower(),
+                or_(Lead.assigned_to == (full_name or "").strip().upper(), Lead.assigned_to == (full_name or "").strip().lower()),
                 Lead.deleted_at.is_(None),
             )
         ) or 0
@@ -431,7 +444,6 @@ class CRMService:
         mode='transfer' -> move their leads to transfer_to; mode='unassign' -> clear owner.
         Returns (ok, message). Guards: can't delete self or the last active admin.
         """
-        from sqlalchemy import func
         target = self.session.scalar(select(User).where(User.username == username))
         if target is None:
             return False, "User not found."
@@ -444,9 +456,12 @@ class CRMService:
             if admin_count <= 1:
                 return False, "Cannot delete the last active Admin."
 
-        owner = target.full_name or target.username
+        owner = (target.full_name or target.username).strip()
         leads = self.session.scalars(
-            select(Lead).where(func.lower(func.trim(Lead.assigned_to)) == owner.strip().lower(), Lead.deleted_at.is_(None))
+            select(Lead).where(
+                or_(Lead.assigned_to == owner.upper(), Lead.assigned_to == owner.lower()),
+                Lead.deleted_at.is_(None)
+            )
         ).all()
         if mode == "transfer":
             if not transfer_to:
@@ -468,11 +483,7 @@ class CRMService:
         return True, f"User '{username}' deleted; {len(leads)} leads {mode}{(' to ' + transfer_to) if mode=='transfer' else 'ed'}."
 
     _MAX_FOLLOWUP_DAYS = 30
-    _CANONICAL_STATUSES = {
-        "Prospect", "Requirement Qualified", "Technical Discussion",
-        "Quotation Sent", "Sample Sent", "Negotiation", "Trial Order",
-        "Order Closed", "Nurturing", "Lost",
-    }
+    _CANONICAL_STATUSES = set(CANONICAL_STATUSES)
     _LOST_REASONS = {
         "Price Too High", "Existing Supplier", "Product Not Available",
         "Price Issues", "Certification Concern", "Imported Locally", "Quality Concern",
@@ -536,7 +547,7 @@ class CRMService:
         return errors
 
     def _clean_entry_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
-        from modules.status_taxonomy import to_canonical
+        from modules.status_taxonomy import CANONICAL_STATUSES, TERMINAL_LOST, TERMINAL_WON, to_canonical
         from modules.geo import normalize_country, country_continent, normalize_source
         phone = self._clean_phone(payload.get("phone"))
         alternate = self._clean_phone(payload.get("alternate_number"))
@@ -580,9 +591,13 @@ class CRMService:
     def _lead_scope(self, user: dict):
         return dashboard_queries.lead_scope(user)
 
+    _LEAD_COLUMN_NAMES: list[str] | None = None
+
     @staticmethod
     def _lead_dict(lead: Lead) -> dict[str, Any]:
-        return {column.name: getattr(lead, column.name) for column in Lead.__table__.columns}
+        if CRMService._LEAD_COLUMN_NAMES is None:
+            CRMService._LEAD_COLUMN_NAMES = [c.name for c in Lead.__table__.columns]
+        return {c: getattr(lead, c) for c in CRMService._LEAD_COLUMN_NAMES}
 
     @staticmethod
     def _clean_phone(value: Any) -> str | None:
