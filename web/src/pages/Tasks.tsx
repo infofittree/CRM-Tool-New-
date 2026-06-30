@@ -250,7 +250,7 @@ export default function Tasks() {
             const dueLabel = isCompleted ? "Done" : isLate ? `${Math.abs(task.days_to)}d late` : isToday ? "Today" : `${task.days_to}d`;
             return (
               <div
-                key={task.lead_id + (isCompleted ? "_done" : "")}
+                key={`${task.lead_id}-${task.followup_id || "no-fu"}-${isCompleted ? "done" : "active"}`}
                 className={cn(
                   "flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border bg-card cursor-pointer",
                   "transition-all duration-180 hover:shadow-[var(--shadow-card-hover)]",
@@ -476,9 +476,9 @@ export default function Tasks() {
       )}
 
       {/* Activity Wizard */}
-      {showActivityWizard && selectedTask && (
+      {showActivityWizard && selectedTask && selectedTask.followup_id && (
         <ActivityWizard
-          followupId={selectedTask.followup_id!}
+          followupId={selectedTask.followup_id}
           leadStatus={selectedTask.status}
           assignedTo={selectedTask.assigned_to || ""}
           companyName={selectedTask.company_name}

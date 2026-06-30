@@ -21,10 +21,11 @@ export default function Login() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (user) {
-    navigate("/", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (user) navigate("/", { replace: true });
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

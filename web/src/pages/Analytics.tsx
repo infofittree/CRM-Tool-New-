@@ -51,7 +51,7 @@ export default function Analytics() {
   const { data: stages, isLoading: stagesLoading } = usePipelineStages();
   const { data: fuDisc, isLoading: fuLoading } = useFollowupDiscipline();
   const { data: activity, isLoading: actLoading } = useActivityAnalytics();
-  const { data: inquiry, isLoading: inqLoading } = useInquiryAnalytics();
+  const { data: inquiry, isLoading: inqLoading } = useInquiryAnalytics(!isSalesperson);
   const { data: prodScores, isLoading: prodLoading } = useProductivity();
   const { data: teamComp, isLoading: teamLoading } = useTeamComparison();
   const { data: trends } = useTrends();

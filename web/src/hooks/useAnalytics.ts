@@ -69,10 +69,11 @@ export function useActivityAnalytics(days = 30) {
   });
 }
 
-export function useInquiryAnalytics() {
+export function useInquiryAnalytics(enabled = true) {
   return useQuery<InquiryAnalytics>({
     queryKey: ["analytics", "inquiry"],
     queryFn: () => api.get("/analytics/inquiry").then((r) => r.data),
+    enabled,
     ...STALE,
   });
 }
