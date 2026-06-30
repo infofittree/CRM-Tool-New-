@@ -33,21 +33,21 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     <aside
       className={cn(
         "fixed lg:static inset-y-0 left-0 z-30 flex flex-col",
-        "w-60 bg-white border-r border-border/60",
+        "w-60 bg-white border-r border-border/40",
         "transition-transform duration-200 ease-out",
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 h-16 border-b border-border/50 shrink-0">
-        <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 shadow-sm">
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-border/30 shrink-0">
+        <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-sm">
           <svg className="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
           </svg>
         </div>
         <div className="leading-tight">
           <span className="font-bold text-[15px] text-primary tracking-tight">FitTree</span>
-          <span className="text-[11px] text-muted-foreground/60 block font-medium tracking-wider uppercase">CRM</span>
+          <span className="text-[10px] text-muted-foreground/50 block font-semibold tracking-widest uppercase">CRM</span>
         </div>
       </div>
 
@@ -64,15 +64,15 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               end={item.href === "/"}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
-                "transition-all duration-150 ease-out",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium",
+                "transition-all duration-180 ease-out",
                 isActive
-                  ? "bg-primary/8 text-primary shadow-sm"
-                  : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/50",
+                  ? "bg-primary/[0.07] text-primary shadow-sm"
+                  : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/40",
               )}
             >
               <svg
-                className={cn("w-[18px] h-[18px] shrink-0 transition-colors", isActive ? "text-primary" : "text-muted-foreground/40")}
+                className={cn("w-[18px] h-[18px] shrink-0 transition-colors duration-180", isActive ? "text-primary" : "text-muted-foreground/35")}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -84,7 +84,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               </svg>
               <span>{item.label}</span>
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/60" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/50" />
               )}
             </NavLink>
           );
@@ -92,21 +92,21 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       </nav>
 
       {/* User area */}
-      <div className="p-3 border-t border-border/50 shrink-0">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/40 transition-colors">
+      <div className="p-3 border-t border-border/30 shrink-0">
+        <div className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-muted/30 transition-colors duration-150 cursor-default">
           <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-semibold text-white shadow-sm shrink-0">
             {user?.full_name?.charAt(0) || "U"}
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate leading-tight">{user?.full_name}</p>
-            <p className="text-[11px] text-muted-foreground/60 truncate font-medium">{user?.role}</p>
+            <p className="text-[13px] font-medium truncate leading-tight">{user?.full_name}</p>
+            <p className="text-[11px] text-muted-foreground/50 truncate font-medium">{user?.role}</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="w-full mt-1.5 justify-start gap-2.5 text-muted-foreground/60 hover:text-foreground text-[13px] font-normal h-9"
+          className="w-full mt-1 justify-start gap-2.5 text-muted-foreground/50 hover:text-foreground text-[13px] font-normal h-9 rounded-xl"
           onClick={() => { logout(); navigate("/login"); }}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

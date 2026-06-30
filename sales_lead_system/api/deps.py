@@ -47,7 +47,7 @@ def get_current_user(
     user = db.scalar(select(User).where(User.username == username, User.is_active.is_(True)))
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
-    return {"username": user.username, "full_name": user.full_name, "role": user.role}
+    return {"username": user.username, "full_name": user.full_name, "role": user.role, "phone": user.phone}
 
 
 def require_role(required_roles: list[str]):

@@ -19,6 +19,7 @@ class UserResponse(BaseModel):
     username: str
     full_name: str
     role: str
+    phone: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -279,6 +280,7 @@ class UserCreate(BaseModel):
     password: str
     full_name: str
     role: str = "Salesperson"
+    phone: str | None = None
 
     @field_validator("role")
     @classmethod

@@ -29,12 +29,12 @@ function StatCard({ label, value, icon: Icon, color, bg }: {
   label: string; value: string | number; icon: React.ElementType; color: string; bg: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border p-4 transition-all", bg)}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={cn("rounded-2xl border p-4 transition-all duration-200 hover-lift", bg)}>
+      <div className="flex items-center justify-between mb-2.5">
         <Icon className={cn("w-4 h-4", color)} />
-        <span className={cn("text-2xl font-bold tabular-nums", color)}>{value}</span>
+        <span className={cn("text-2xl font-bold tabular-nums tracking-tight", color)}>{value}</span>
       </div>
-      <p className="text-sm font-medium text-foreground/80">{label}</p>
+      <p className="text-[13px] font-medium text-foreground/70">{label}</p>
     </div>
   );
 }
@@ -43,18 +43,18 @@ function ActionItem({ title, description, icon: Icon, color, onClick, badge }: {
   title: string; description: string; icon: React.ElementType; color: string; onClick: () => void; badge?: string;
 }) {
   return (
-    <div onClick={onClick} className="flex items-start gap-3 p-3.5 rounded-xl border border-border/60 cursor-pointer hover:shadow-sm transition-all hover:border-primary/20 group">
-      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", color)}>
-        <Icon className="w-4 h-4" />
+    <div onClick={onClick} className="flex items-start gap-3.5 p-4 rounded-2xl border border-border/50 cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:border-primary/15 transition-all duration-200 group bg-card">
+      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105", color)}>
+        <Icon className="w-[18px] h-[18px]" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold group-hover:text-primary transition-colors">{title}</p>
+          <p className="text-[13px] font-semibold group-hover:text-primary transition-colors duration-180">{title}</p>
           {badge && <span className="text-[10px] font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">{badge}</span>}
         </div>
-        <p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
+        <p className="text-[12px] text-muted-foreground/50 mt-0.5 leading-relaxed">{description}</p>
       </div>
-      <ArrowRight className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary/50 transition-colors shrink-0 mt-0.5" />
+      <ArrowRight className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary/50 transition-all duration-200 shrink-0 mt-0.5 group-hover:translate-x-0.5" />
     </div>
   );
 }
@@ -91,36 +91,36 @@ export default function Dashboard() {
     return (
       <div className="p-5 lg:p-7 space-y-6 max-w-[1400px] mx-auto">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-[18px] bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 lg:p-8 text-white shadow-lg shadow-primary/10">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-7 lg:p-9 text-white shadow-lg shadow-primary/10">
           <div className="absolute inset-0 opacity-[0.03]">
             <svg className="w-full h-full" viewBox="0 0 800 400">
               <defs><pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0L0 0 0 60" fill="none" stroke="white" strokeWidth="1" /></pattern></defs>
               <rect width="100%" height="100%" fill="url(#g)" />
             </svg>
           </div>
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div className="flex-1">
-              <div className="flex items-center gap-2.5 mb-2">
-                <Sparkles className="w-5 h-5 text-white/70" />
-                <span className="text-sm font-medium text-white/70 tracking-wide uppercase">Today's Work</span>
+              <div className="flex items-center gap-2.5 mb-3">
+                <Sparkles className="w-4 h-4 text-white/60" />
+                <span className="text-[11px] font-semibold text-white/55 tracking-widest uppercase">Today's Work</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">{getGreeting()}, {user?.full_name?.split(" ")[0]}</h1>
-              <p className="text-white/70 mt-2 text-[15px] max-w-lg leading-relaxed">
+              <h1 className="text-2xl lg:text-[28px] font-bold tracking-tight leading-tight">{getGreeting()}, {user?.full_name?.split(" ")[0]}</h1>
+              <p className="text-white/65 mt-2.5 text-[14px] max-w-lg leading-relaxed">
                 {todayTasks.length > 0 || overdueTasks.length > 0 ? (
                   <>You have <span className="text-white font-semibold">{overdueTasks.length > 0 ? `${overdueTasks.length} overdue, ` : ""}{todayTasks.length} due today</span>. Start with your highest priority task below.</>
                 ) : "All caught up! Check your pipeline below."}
               </p>
             </div>
             <div className="flex items-center gap-4 shrink-0">
-              <div className="hidden lg:flex items-center gap-5 px-4 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm">
+              <div className="hidden lg:flex items-center gap-6 px-5 py-3 rounded-xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.08]">
                 {[
                   { label: "Overdue", value: overdueTasks.length, urgent: overdueTasks.length > 0 },
                   { label: "Today", value: todayTasks.length, urgent: false },
                   { label: "Active", value: execSummary?.active_leads || allLeads?.length || 0, urgent: false },
                 ].map((s) => (
                   <div key={s.label} className="text-center">
-                    <p className={cn("text-lg font-bold", s.urgent ? "text-amber-300" : "text-white")}>{s.value}</p>
-                    <p className="text-[11px] text-white/60 font-medium">{s.label}</p>
+                    <p className={cn("text-xl font-bold tabular-nums", s.urgent ? "text-amber-300" : "text-white")}>{s.value}</p>
+                    <p className="text-[11px] text-white/50 font-medium mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>

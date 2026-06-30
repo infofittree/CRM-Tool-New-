@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SkeletonChart } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useSalespersonFilter } from "@/lib/salespersonContext";
 import {
   useExecutiveSummary, useConversionFunnel, usePipelineStages,
@@ -32,7 +33,10 @@ const tooltipStyle = {
 };
 
 export default function Analytics() {
+  const { user } = useAuth();
   const { selectedSalesperson } = useSalespersonFilter();
+  const isSalesperson = user?.role === "Salesperson";
+  const myName = user?.full_name || "";
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -261,63 +265,88 @@ export default function Analytics() {
         </Section>
       )}
 
-      {/* 7. Lead Health Summary */}
-      <Section title="Productivity Scores" icon={<Target className="w-4 h-4" />}>
+      {/* 7. Productivity Score (salesperson sees only their own) */}
+      <Section title={isSalesperson ? "My Productivity Score" : "Productivity Scores"} icon={<Target className="w-4 h-4" />}>
         {prodLoading ? <SkeletonChart /> : prodScores && prodScores.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {prodScores.slice(0, 12).map((p) => (
-              <Card key={p.assigned_to} className="border-border/60">
-                <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">{p.assigned_to}</p>
-                  <p className={cn("text-2xl font-bold", p.score >= 70 ? "text-green-600" : p.score >= 40 ? "text-amber-600" : "text-muted-foreground")}>
-                    {p.score}
-                  </p>
-                  <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", p.score >= 70 ? "bg-green-500" : p.score >= 40 ? "bg-amber-500" : "bg-muted-foreground/30")}
-                      style={{ width: `${p.score}%` }} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          isSalesperson ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {prodScores.filter((p) => p.assigned_to === myName).slice(0, 1).map((p) => (
+                <Card key={p.assigned_to} className="border-border/60">
+                  <CardContent className="p-5 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">{p.assigned_to}</p>
+                    <p className={cn("text-4xl font-bold", p.score >= 70 ? "text-green-600" : p.score >= 40 ? "text-amber-600" : "text-muted-foreground")}>
+                      {p.score}
+                    </p>
+                    <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className={cn("h-full rounded-full", p.score >= 70 ? "bg-green-500" : p.score >= 40 ? "bg-amber-500" : "bg-muted-foreground/30")}
+                        style={{ width: `${p.score}%` }} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {p.score >= 70 ? "Great performance!" : p.score >= 40 ? "Keep pushing!" : "Room for improvement"}
+                    </p>
+                  </CardContent>
+                </Card>
+              )) || <Empty />}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {prodScores.slice(0, 12).map((p) => (
+                <Card key={p.assigned_to} className="border-border/60">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">{p.assigned_to}</p>
+                    <p className={cn("text-2xl font-bold", p.score >= 70 ? "text-green-600" : p.score >= 40 ? "text-amber-600" : "text-muted-foreground")}>
+                      {p.score}
+                    </p>
+                    <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className={cn("h-full rounded-full", p.score >= 70 ? "bg-green-500" : p.score >= 40 ? "bg-amber-500" : "bg-muted-foreground/30")}
+                        style={{ width: `${p.score}%` }} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         ) : <Empty />}
       </Section>
 
-      {/* 8. Team Comparison */}
+      {/* 8. Team Comparison (always at bottom) */}
       <Section title="Team Comparison" icon={<Users className="w-4 h-4" />}>
         {teamLoading ? <SkeletonChart /> : teamComp && teamComp.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-muted-foreground">
-                  <th className="text-left py-2 px-3 font-medium">Salesperson</th>
-                  <th className="text-right py-2 px-3 font-medium">Leads</th>
-                  <th className="text-right py-2 px-3 font-medium">Active</th>
-                  <th className="text-right py-2 px-3 font-medium">Won</th>
-                  <th className="text-right py-2 px-3 font-medium">Conv%</th>
-                  <th className="text-right py-2 px-3 font-medium">Tasks Done</th>
-                  <th className="text-right py-2 px-3 font-medium">Task%</th>
-                  <th className="text-right py-2 px-3 font-medium">Eng 30d</th>
-                  <th className="text-right py-2 px-3 font-medium">Overdue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamComp.map((t) => (
-                  <tr key={t.assigned_to} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="py-2 px-3 font-medium">{t.assigned_to}</td>
-                    <td className="py-2 px-3 text-right">{t.total_leads}</td>
-                    <td className="py-2 px-3 text-right">{t.active_leads}</td>
-                    <td className="py-2 px-3 text-right text-green-600">{t.won}</td>
-                    <td className="py-2 px-3 text-right">{t.conversion_rate}%</td>
-                    <td className="py-2 px-3 text-right">{t.completed_tasks}</td>
-                    <td className="py-2 px-3 text-right">{t.task_completion_pct}%</td>
-                    <td className="py-2 px-3 text-right">{t.engagement_30d}</td>
-                    <td className={cn("py-2 px-3 text-right", t.overdue_tasks > 0 ? "text-destructive font-semibold" : "")}>{t.overdue_tasks}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Card className="border-border/60">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Salesperson</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Leads</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Active</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Won</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Conv%</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Eng 30d</th>
+                      <th className="text-right py-3 px-4 font-semibold text-muted-foreground/60 text-[11px] uppercase">Overdue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamComp.map((t) => (
+                      <tr key={t.assigned_to} className={cn("border-b last:border-0 hover:bg-muted/20 transition-colors", isSalesperson && t.assigned_to === myName && "bg-primary/[0.04]")}>
+                        <td className="py-3 px-4 font-medium">
+                          {t.assigned_to}
+                          {isSalesperson && t.assigned_to === myName && <span className="ml-1.5 text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">You</span>}
+                        </td>
+                        <td className="py-3 px-4 text-right">{t.total_leads}</td>
+                        <td className="py-3 px-4 text-right">{t.active_leads}</td>
+                        <td className="py-3 px-4 text-right text-green-600">{t.won}</td>
+                        <td className="py-3 px-4 text-right">{t.conversion_rate}%</td>
+                        <td className="py-3 px-4 text-right">{t.engagement_30d}</td>
+                        <td className={cn("py-3 px-4 text-right", t.overdue_tasks > 0 ? "text-destructive font-semibold" : "")}>{t.overdue_tasks}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         ) : <Empty />}
       </Section>
     </div>

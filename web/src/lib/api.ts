@@ -29,6 +29,7 @@ export interface User {
   username: string;
   full_name: string;
   role: string;
+  phone?: string | null;
 }
 
 export interface LoginResponse {

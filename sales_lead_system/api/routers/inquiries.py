@@ -158,6 +158,19 @@ def create_inquiry(
     db.add(inquiry)
     db.commit()
     db.refresh(inquiry)
+
+    if body.priority == "URGENT" and procurement_user and procurement_user.phone:
+        from modules.notifications import send_whatsapp, format_urgent_inquiry_message
+        msg = format_urgent_inquiry_message(
+            title=body.title,
+            inquiry_type=body.type,
+            created_by=user["full_name"],
+            lead_id=body.lead_id,
+            company_name=lead.company_name,
+            description=body.description,
+        )
+        send_whatsapp(procurement_user.phone, msg)
+
     return _row_to_response(inquiry)
 
 

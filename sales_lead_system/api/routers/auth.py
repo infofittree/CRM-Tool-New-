@@ -51,7 +51,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token({"sub": user.username})
     return TokenResponse(
         access_token=token,
-        user=UserResponse(username=user.username, full_name=user.full_name, role=user.role),
+        user=UserResponse(username=user.username, full_name=user.full_name, role=user.role, phone=user.phone),
     )
 
 

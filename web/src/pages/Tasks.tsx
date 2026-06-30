@@ -153,12 +153,12 @@ export default function Tasks() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summaryCards.map((s) => (
-          <div key={s.label} className={cn("rounded-2xl border p-4 transition-all", s.bg, s.border)}>
-            <div className="flex items-center justify-between mb-2">
+          <div key={s.label} className={cn("rounded-2xl border p-5 transition-all duration-200 hover-lift", s.bg, s.border)}>
+            <div className="flex items-center justify-between mb-3">
               <s.icon className={cn("w-4 h-4", s.color)} />
-              <span className={cn("text-2xl font-bold tabular-nums", s.color)}>{s.value}</span>
+              <span className={cn("text-2xl font-bold tabular-nums tracking-tight", s.color)}>{s.value}</span>
             </div>
-            <p className="text-sm font-medium text-foreground/80">{s.label}</p>
+            <p className="text-[13px] font-medium text-foreground/70">{s.label}</p>
           </div>
         ))}
       </div>
@@ -252,10 +252,10 @@ export default function Tasks() {
               <div
                 key={task.lead_id + (isCompleted ? "_done" : "")}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-[14px] border bg-card cursor-pointer",
-                  "transition-all duration-150 hover:shadow-sm",
-                  isLate ? "border-red-200/60 hover:border-red-300/60" : "border-border/60 hover:border-primary/20",
-                  isCompleted && "opacity-75",
+                  "flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border bg-card cursor-pointer",
+                  "transition-all duration-180 hover:shadow-[var(--shadow-card-hover)]",
+                  isLate ? "border-red-200/50 hover:border-red-300/60" : "border-border/50 hover:border-primary/15",
+                  isCompleted && "opacity-60",
                 )}
                 onClick={() => handleOpenTask(task)}
               >
@@ -265,19 +265,19 @@ export default function Tasks() {
                 )} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-[14px] truncate group-hover:text-primary transition-colors">
+                    <span className="font-semibold text-[14px] truncate">
                       {task.company_name}
                     </span>
-                    <span className={cn("text-[11px] font-semibold px-1.5 py-0.5 rounded border", typeConfig.badgeColor)}>
+                    <span className={cn("badge-premium px-1.5 py-0.5 rounded-md border", typeConfig.badgeColor)}>
                       {typeConfig.badge}
                     </span>
                     {!isCompleted && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground/60">
+                      <span className="badge-premium px-1.5 py-0.5 rounded-md bg-muted/60 text-muted-foreground/50 border-0">
                         {task.standard_status}
                       </span>
                     )}
                     {isCompleted && task.outcome_notes && (
-                      <span className="text-[11px] text-muted-foreground/40 line-clamp-1 italic">
+                      <span className="text-[11px] text-muted-foreground/35 line-clamp-1 italic">
                         "{task.outcome_notes.slice(0, 60)}{task.outcome_notes.length > 60 ? '...' : ''}"
                       </span>
                     )}
@@ -285,18 +285,15 @@ export default function Tasks() {
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
                   <span className={cn(
-                    "text-[12px] font-semibold px-2 py-0.5 rounded-md",
+                    "badge-premium px-2 py-0.5 rounded-lg",
                     isCompleted ? "bg-emerald-50 text-emerald-600"
                       : isLate ? "bg-red-50 text-red-600"
                       : isToday ? "bg-amber-50 text-amber-600"
-                      : "bg-muted text-muted-foreground/60",
+                      : "bg-muted text-muted-foreground/50",
                   )}>
                     {dueLabel}
                   </span>
-                  {!isCompleted && task.phone && (
-                    <span className="text-[12px] text-muted-foreground/50 hidden sm:block">{task.phone}</span>
-                  )}
-                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/15" />
                 </div>
               </div>
             );

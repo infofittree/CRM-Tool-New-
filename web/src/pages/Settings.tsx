@@ -65,6 +65,7 @@ export default function Settings() {
                     <div>
                       <p className="font-medium">{u.full_name}</p>
                       <p className="text-xs text-muted-foreground">{u.username}</p>
+                      {u.phone && <p className="text-xs text-muted-foreground/60">{u.phone}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

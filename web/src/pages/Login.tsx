@@ -204,11 +204,11 @@ export default function Login() {
           </div>
 
           {/* Login Card */}
-          <div className="bg-white dark:bg-card rounded-2xl border border-border/50 shadow-[0_2px_20px_-4px_hsla(152,60%,32%,0.08),0_8px_40px_-8px_hsla(0,0%,0%,0.05)] p-8 lg:p-10">
+          <div className="bg-white dark:bg-card rounded-2xl border border-border/40 shadow-[var(--shadow-elevated)] p-8 lg:p-10">
             {/* Welcome */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h2>
-              <p className="text-sm text-muted-foreground/70 mt-1.5">Sign in to continue to FitTree CRM</p>
+              <p className="text-[13px] text-muted-foreground/55 mt-1.5">Sign in to continue to FitTree CRM</p>
             </div>
 
             {/* Form */}
@@ -224,31 +224,31 @@ export default function Login() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground/80">Username</label>
+                <label className="text-[13px] font-medium text-foreground/70">Username</label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/35 pointer-events-none" />
                   <input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter your username"
                     required
                     autoFocus
-                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-150 placeholder:text-muted-foreground/30 hover:border-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/40"
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-180 placeholder:text-muted-foreground/35 hover:border-muted-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15 focus-visible:border-primary/40"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground/80">Password</label>
+                <label className="text-[13px] font-medium text-foreground/70">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/35 pointer-events-none" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-150 placeholder:text-muted-foreground/30 hover:border-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/40"
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-180 placeholder:text-muted-foreground/35 hover:border-muted-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15 focus-visible:border-primary/40"
                   />
                 </div>
               </div>

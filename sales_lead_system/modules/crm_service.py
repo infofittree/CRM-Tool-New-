@@ -422,9 +422,9 @@ class CRMService:
         duplicates.sort(key=lambda item: item["similarity"], reverse=True)
         return duplicates[:5]
 
-    def create_user(self, username: str, password: str, full_name: str, role: str) -> None:
+    def create_user(self, username: str, password: str, full_name: str, role: str, phone: str | None = None) -> None:
         """Create a CRM user."""
-        self.session.add(User(username=username, password_hash=hash_password(password), full_name=full_name, role=role, is_active=True))
+        self.session.add(User(username=username, password_hash=hash_password(password), full_name=full_name, role=role, phone=phone, is_active=True))
 
     def user_workload(self, full_name: str) -> dict[str, int]:
         """Count active leads (and open follow-ups) owned by a user — for delete preview."""

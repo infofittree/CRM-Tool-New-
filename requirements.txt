@@ -7,3 +7,4 @@ mysql-connector-python>=8.4.0
 python-dotenv>=1.0.1
 streamlit>=1.36.0
 plotly>=5.22.0
+requests>=2.31.0

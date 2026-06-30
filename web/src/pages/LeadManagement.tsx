@@ -56,19 +56,19 @@ function FilterDropdown({ label, options, value, onChange }: {
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-          value ? "text-primary" : "text-muted-foreground/60 hover:text-muted-foreground",
+          "flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-180",
+          value ? "text-primary" : "text-muted-foreground/50 hover:text-muted-foreground",
         )}
       >
         {label}
-        <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
-        {value && <X className="w-3 h-3 ml-0.5 hover:text-destructive" onClick={(e) => { e.stopPropagation(); onChange(""); }} />}
+        <ChevronDown className={cn("w-3 h-3 transition-transform duration-180", open && "rotate-180")} />
+        {value && <X className="w-3 h-3 ml-0.5 hover:text-destructive transition-colors" onClick={(e) => { e.stopPropagation(); onChange(""); }} />}
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-border rounded-xl shadow-lg py-1 min-w-[160px] max-h-[240px] overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1.5 z-50 bg-white border border-border/60 rounded-xl shadow-[var(--shadow-dropdown)] py-1 min-w-[160px] max-h-[240px] overflow-y-auto animate-slide-down">
           <button
             onClick={() => { onChange(""); setOpen(false); }}
-            className={cn("w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50 transition-colors", !value && "font-semibold text-primary")}
+            className={cn("w-full text-left px-3 py-2 text-xs hover:bg-muted/40 transition-colors duration-150", !value && "font-semibold text-primary")}
           >
             All {label}s
           </button>
@@ -76,7 +76,7 @@ function FilterDropdown({ label, options, value, onChange }: {
             <button
               key={opt}
               onClick={() => { onChange(opt); setOpen(false); }}
-              className={cn("w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50 transition-colors", value === opt && "font-semibold text-primary bg-primary/5")}
+              className={cn("w-full text-left px-3 py-2 text-xs hover:bg-muted/40 transition-colors duration-150", value === opt && "font-semibold text-primary bg-primary/5")}
             >
               {opt || "—"}
             </button>
@@ -174,7 +174,7 @@ export default function LeadManagement() {
             placeholder="Search by company, contact, email..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-150 placeholder:text-muted-foreground/40 hover:border-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:border-ring/50"
+            className="w-full h-10 pl-9 pr-4 rounded-xl border border-input bg-background text-sm transition-all duration-180 placeholder:text-muted-foreground/40 hover:border-muted-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15 focus-visible:border-primary/40"
           />
         </div>
         <select
@@ -200,16 +200,16 @@ export default function LeadManagement() {
       )}
 
       {/* Table */}
-      <Card className="overflow-hidden border-border/50">
+      <Card className="overflow-hidden border-border/40">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border/50 bg-muted/30">
-                <th className="text-left py-3.5 px-4 min-w-[180px]">
-                  <span className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Company</span>
+              <tr className="border-b border-border/40 bg-muted/20">
+                <th className="text-left py-3 px-5 min-w-[180px]">
+                  <span className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Company</span>
                 </th>
-                <th className="text-left py-3.5 px-4">
-                  <span className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Contact</span>
+                <th className="text-left py-3 px-5">
+                  <span className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Contact</span>
                 </th>
                 <th className="text-left py-3.5 px-4">
                   <FilterDropdown label="Country" options={uniqueCountries} value={countryFilter} onChange={setCountryFilter} />
@@ -255,9 +255,9 @@ export default function LeadManagement() {
                     <tr
                       key={lead.lead_id}
                       onClick={() => navigate(`/leads/${lead.lead_id}`)}
-                      className="border-b border-border/30 hover:bg-primary/[0.02] cursor-pointer transition-colors group"
+                      className="border-b border-border/30 hover:bg-primary/[0.02] cursor-pointer transition-colors duration-150 group"
                     >
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-5">
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm",
@@ -266,7 +266,7 @@ export default function LeadManagement() {
                             {(lead.company_name || "?").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-medium text-foreground/90 group-hover:text-primary transition-colors">
+                            <span className="font-medium text-foreground/85 group-hover:text-primary transition-colors duration-180">
                               {lead.company_name || "—"}
                             </span>
                             {lead.industry && (

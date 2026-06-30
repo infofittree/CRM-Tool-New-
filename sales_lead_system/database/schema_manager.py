@@ -134,6 +134,7 @@ PHASE6_ORDER_COLUMNS = {
 
 PHASE6_USER_COLUMNS = {
     "is_deleted": "is_deleted BOOLEAN NOT NULL DEFAULT 0",
+    "phone": "phone VARCHAR(20)",
 }
 
 

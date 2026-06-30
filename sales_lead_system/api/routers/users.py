@@ -20,7 +20,7 @@ def list_users(
     db: Session = Depends(get_db),
 ):
     users = db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.full_name)).all()
-    return [UserResponse(username=u.username, full_name=u.full_name, role=u.role) for u in users]
+    return [UserResponse(username=u.username, full_name=u.full_name, role=u.role, phone=u.phone) for u in users]
 
 
 @router.get("/salespersons", response_model=list[str])
@@ -52,8 +52,8 @@ def create_user(
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
     service = CRMService(db)
-    service.create_user(body.username, body.password, body.full_name, body.role)
-    return UserResponse(username=body.username, full_name=body.full_name, role=body.role)
+    service.create_user(body.username, body.password, body.full_name, body.role, phone=body.phone)
+    return UserResponse(username=body.username, full_name=body.full_name, role=body.role, phone=body.phone)
 
 
 @router.delete("/{username}")
