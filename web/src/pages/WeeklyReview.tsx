@@ -92,7 +92,69 @@ export default function WeeklyReview() {
         <p className="text-muted-foreground mt-1">{total} leads in scope</p>
       </div>
 
-      {/* Trend chart */}
+      {/* Date picker — FIRST */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Week Start</label>
+                <input
+                  type="date"
+                  value={weekStart}
+                  onChange={(e) => setWeekStart(e.target.value)}
+                  className="h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <span className="text-muted-foreground mt-5">—</span>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Week End</label>
+                <input
+                  type="date"
+                  value={weekEnd}
+                  onChange={(e) => setWeekEnd(e.target.value)}
+                  className="h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+            <div className="ml-auto text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{total}</span> leads total{selectedSalesperson ? ` for ${selectedSalesperson}` : ""}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pipeline Funnel — SECOND */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            Pipeline Funnel
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <SkeletonChart />
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={statusCounts} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 93%)" vertical={false} />
+                <XAxis dataKey="status" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                  {statusCounts.map((entry) => (
+                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#94a3b8"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Activity Trends — THIRD */}
       {trendChartData.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -144,69 +206,7 @@ export default function WeeklyReview() {
         </Card>
       )}
 
-      {/* Date picker */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <div className="flex items-center gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Week Start</label>
-                <input
-                  type="date"
-                  value={weekStart}
-                  onChange={(e) => setWeekStart(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <span className="text-muted-foreground mt-5">—</span>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Week End</label>
-                <input
-                  type="date"
-                  value={weekEnd}
-                  onChange={(e) => setWeekEnd(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </div>
-            <div className="ml-auto text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{total}</span> leads total{selectedSalesperson ? ` for ${selectedSalesperson}` : ""}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Status funnel chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" />
-            Pipeline Funnel
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <SkeletonChart />
-          ) : (
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={statusCounts} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 93%)" vertical={false} />
-                <XAxis dataKey="status" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                  {statusCounts.map((entry) => (
-                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#94a3b8"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Status grid */}
+      {/* Status grid — FOURTH */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statusCounts.map(({ status, count }) => (
           <Card key={status} className="border-border/60">

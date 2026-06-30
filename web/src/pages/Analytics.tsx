@@ -106,11 +106,20 @@ export default function Analytics() {
   // Weekly Review data (for salesperson)
   const { data: weeklyLeads, isLoading: weeklyLoading } = useQuery({
     queryKey: ["analytics", "weekly-review", weekStart, weekEnd],
-    queryFn: () => api.get("/dashboard/leads", { params: { limit: 500 } }).then((r) => r.data.items),
-    staleTime: 60_000,
+    queryFn: () => api.get("/dashboard/leads", { params: { limit: 2000 } }).then((r) => r.data.items),
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
     enabled: isSalesperson,
   });
+
+  const filteredWeeklyLeads = useMemo(() => {
+    if (!weeklyLeads) return [];
+    return weeklyLeads.filter((l: any) => {
+      const d = l.created_date || l.created_at;
+      if (!d) return true;
+      return d >= weekStart && d <= weekEnd;
+    });
+  }, [weeklyLeads, weekStart, weekEnd]);
 
   const WEEKLY_STATUSES = ["Prospect", "Requirement Qualified", "Technical Discussion", "Quotation Sent", "Sample Sent", "Negotiation", "Trial Order", "Nurturing", "Order Closed", "Lost"];
   const STATUS_COLORS: Record<string, string> = {
@@ -124,7 +133,7 @@ export default function Analytics() {
 
   const statusCounts = WEEKLY_STATUSES.map((s) => ({
     status: s,
-    count: weeklyLeads?.filter((l: any) => l.status === s).length || 0,
+    count: filteredWeeklyLeads.filter((l: any) => l.status === s).length,
   }));
   const weeklyTotal = statusCounts.reduce((a, s) => a + s.count, 0);
 
@@ -361,7 +370,37 @@ export default function Analytics() {
       {/* ── Weekly Review (Salesperson only) ──────────────────────────── */}
       {isSalesperson && (
         <>
-          {/* Activity Trends */}
+          {/* Pipeline Funnel + Date Range — FIRST */}
+          <Section title="Pipeline Funnel" icon={<BarChart3 className="w-4 h-4" />}>
+            <Card className="border-border/40">
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} className="h-9 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/15" />
+                  <span className="text-muted-foreground">—</span>
+                  <input type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} className="h-9 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/15" />
+                  <span className="text-xs text-muted-foreground ml-auto">{weeklyTotal} leads</span>
+                </div>
+                {weeklyLoading ? <SkeletonChart /> : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={statusCounts} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 93%)" vertical={false} />
+                      <XAxis dataKey="status" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(0 0% 90%)", borderRadius: "8px", fontSize: "13px" }} />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                        {statusCounts.map((entry) => (
+                          <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#94a3b8"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </Section>
+
+          {/* Activity Trends — SECOND */}
           {trendChartData.length > 0 && (
             <Section title="Activity Trends (7/30/90 Day)" icon={<TrendingUp className="w-4 h-4" />}>
               <Card className="border-border/40">
@@ -403,36 +442,6 @@ export default function Analytics() {
               </Card>
             </Section>
           )}
-
-          {/* Pipeline Funnel + Date Range */}
-          <Section title="Pipeline Funnel" icon={<BarChart3 className="w-4 h-4" />}>
-            <Card className="border-border/40">
-              <CardContent className="pt-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} className="h-9 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/15" />
-                  <span className="text-muted-foreground">—</span>
-                  <input type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} className="h-9 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/15" />
-                  <span className="text-xs text-muted-foreground ml-auto">{weeklyTotal} leads</span>
-                </div>
-                {weeklyLoading ? <SkeletonChart /> : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={statusCounts} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 93%)" vertical={false} />
-                      <XAxis dataKey="status" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(0 0% 90%)", borderRadius: "8px", fontSize: "13px" }} />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                        {statusCounts.map((entry) => (
-                          <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#94a3b8"} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-          </Section>
 
           {/* Status Grid */}
           <Section title="Pipeline by Status" icon={<Target className="w-4 h-4" />}>
