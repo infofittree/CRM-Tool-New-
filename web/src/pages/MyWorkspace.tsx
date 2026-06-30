@@ -91,7 +91,7 @@ export default function MyWorkspace() {
               </h2>
               <div className="space-y-2">
                 {overdueTasks.slice(0, 5).map((task: any) => (
-                  <TaskRow key={task.lead_id} task={task} navigate={navigate} />
+                  <TaskRow key={`${task.lead_id}-${task.followup_id || "t"}`} task={task} navigate={navigate} />
                 ))}
                 {overdueTasks.length > 5 && (
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => navigate("/tasks")}>
@@ -110,7 +110,7 @@ export default function MyWorkspace() {
             </h2>
             <div className="space-y-2">
               {todayTasks.length > 0 ? todayTasks.slice(0, 5).map((task: any) => (
-                <TaskRow key={task.lead_id} task={task} navigate={navigate} />
+                <TaskRow key={`${task.lead_id}-${task.followup_id || "t"}`} task={task} navigate={navigate} />
               )) : (
                 <Card>
                   <CardContent className="py-8 text-center">
@@ -130,7 +130,7 @@ export default function MyWorkspace() {
             </h2>
             <div className="space-y-2">
               {upcomingTasks.slice(0, 5).map((task: any) => (
-                <TaskRow key={task.lead_id} task={task} navigate={navigate} />
+                <TaskRow key={`${task.lead_id}-${task.followup_id || "t"}`} task={task} navigate={navigate} />
               ))}
               {upcomingTasks.length > 5 && (
                 <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => navigate("/tasks")}>

@@ -159,7 +159,7 @@ export default function Dashboard() {
                   const isLate = task.days_to < 0;
                   const isDue = task.days_to === 0;
                   return (
-                    <div key={task.lead_id} onClick={() => navigate(`/leads/${task.lead_id}`)} className={cn("group flex items-center gap-3.5 p-3.5 rounded-[14px] border bg-card cursor-pointer transition-all duration-150", isLate ? "border-red-200/60 hover:border-red-300/60 hover:shadow-sm" : "border-border/60 hover:border-primary/20 hover:shadow-sm")}>
+                    <div key={`${task.lead_id}-${task.followup_id || "t"}`} onClick={() => navigate(`/leads/${task.lead_id}`)} className={cn("group flex items-center gap-3.5 p-3.5 rounded-[14px] border bg-card cursor-pointer transition-all duration-150", isLate ? "border-red-200/60 hover:border-red-300/60 hover:shadow-sm" : "border-border/60 hover:border-primary/20 hover:shadow-sm")}>
                       <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", isLate ? "bg-destructive" : isDue ? "bg-accent" : "bg-primary/40")} />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-[14px] truncate">{task.company_name}</p>
