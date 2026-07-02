@@ -162,23 +162,31 @@ def _emit(progress: ProgressCallback | None, label: str, detail: str) -> None:
 def ensure_default_admin(db: DatabaseConnection) -> None:
     import os
 
-    username = os.getenv("CRM_ADMIN_USER")
-    password = os.getenv("CRM_ADMIN_PASSWORD")
-    if not username or not password:
-        return
     with db.session_scope() as session:
         has_user = session.scalar(select(User.user_id).limit(1))
         if has_user:
             return
-        session.add(
-            User(
-                username=username,
-                password_hash=hash_password(password),
-                full_name="System Admin",
-                role="Admin",
-                is_active=True,
+        
+        # Create default users
+        users_data = [
+            ("yashsharma", "Yash123", "Yash Sharma", "Admin"),
+            ("poonam", "Poonam123", "Poonam", "Manager"),
+            ("shiksha", "Shiksha123", "Shiksha", "Admin"),
+            ("vaidehi", "Vaidehi123", "Vaidehi", "Salesperson"),
+            ("rahul", "Rahul123", "Rahul", "Salesperson"),
+            ("kusum", "Kusum123", "Kusum", "Salesperson"),
+        ]
+        
+        for username, password, full_name, role in users_data:
+            session.add(
+                User(
+                    username=username,
+                    password_hash=hash_password(password),
+                    full_name=full_name,
+                    role=role,
+                    is_active=True,
+                )
             )
-        )
 
 
 def _required_tables_exist(db: DatabaseConnection) -> bool:
