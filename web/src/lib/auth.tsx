@@ -4,10 +4,13 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import api, { type User, type LoginResponse } from "@/lib/api";
+
+const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
 interface AuthContextType {
   user: User | null;
@@ -22,32 +25,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const logout = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("user");
     setUser(null);
     navigate("/login");
   }, [navigate]);
 
+  // Force re-login on every page refresh — do NOT restore from sessionStorage
   useEffect(() => {
-    const token = sessionStorage.getItem("access_token");
-    const savedUser = sessionStorage.getItem("user");
-    if (token && savedUser) {
-      api
-        .get<User>("/auth/me")
-        .then((res) => {
-          setUser(res.data);
-          sessionStorage.setItem("user", JSON.stringify(res.data));
-        })
-        .catch(() => {
-          logout();
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    setLoading(false);
+  }, []);
+
+  // Inactivity timer — logout after 20 minutes of no activity
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (user) {
+      timerRef.current = setTimeout(() => {
+        logout();
+      }, INACTIVITY_TIMEOUT_MS);
     }
-  }, [logout]);
+  }, [user, logout]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
+    const handler = () => resetTimer();
+
+    events.forEach((e) => document.addEventListener(e, handler, { passive: true }));
+    resetTimer();
+
+    return () => {
+      events.forEach((e) => document.removeEventListener(e, handler));
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [user, resetTimer]);
 
   const login = useCallback(
     async (username: string, password: string): Promise<string | null> => {
