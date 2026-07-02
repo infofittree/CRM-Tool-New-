@@ -37,6 +37,10 @@ class DatabaseConnection:
         url = self.settings.sqlalchemy_url
         if self.settings.is_sqlite:
             return create_engine(url, echo=False, future=True)
+        # PostgreSQL or MySQL
+        connect_args = {}
+        if "postgresql" in url:
+            connect_args["sslmode"] = "require"
         return create_engine(
             url,
             pool_pre_ping=True,
@@ -44,6 +48,7 @@ class DatabaseConnection:
             pool_size=self.settings.pool_size,
             max_overflow=self.settings.max_overflow,
             pool_timeout=self.settings.pool_timeout_seconds,
+            connect_args=connect_args,
             echo=False,
             future=True,
         )

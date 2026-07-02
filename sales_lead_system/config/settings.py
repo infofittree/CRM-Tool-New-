@@ -28,7 +28,7 @@ def _env_bool(key: str, default: bool = False) -> bool:
 
 @dataclass(frozen=True)
 class MySQLSettings:
-    """Connection settings — MySQL (production) or SQLite (local dev)."""
+    """Connection settings — MySQL/PostgreSQL (production) or SQLite (local dev)."""
 
     # SQLite mode
     use_sqlite: bool = False
@@ -52,6 +52,11 @@ class MySQLSettings:
 
     @property
     def sqlalchemy_url(self) -> str:
+        # Check for DATABASE_URL (Railway PostgreSQL)
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            return database_url
+        
         if self.use_sqlite:
             db_path = Path(self.sqlite_db_path)
             if not db_path.is_absolute():

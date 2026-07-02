@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import logging
-import sys
 import os
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
-# Ensure the sales_lead_system package root is on sys.path so "from api..." imports work
+# Ensure the sales_lead_system package root is on sys.path
 _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _pkg_root not in sys.path:
     sys.path.insert(0, _pkg_root)
@@ -85,6 +87,21 @@ app.include_router(inquiries.router, prefix="/api/v1", tags=["inquiries"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["analytics"])
 
 
-@app.api_route("/{path:path}", methods=["OPTIONS"])
-async def catch_all_options(path: str):
-    return Response(status_code=200)
+# ── Serve Frontend Static Files ──────────────────────────────────────────
+_dist_dir = Path(__file__).resolve().parent.parent.parent / "web" / "dist"
+if _dist_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(_dist_dir / "assets")), name="assets")
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        file_path = _dist_dir / path
+        if file_path.is_file():
+            return Response(
+                content=file_path.read_bytes(),
+                media_type="text/html" if path.endswith(".html") else None,
+            )
+        # SPA fallback — serve index.html for all non-API, non-asset routes
+        index = _dist_dir / "index.html"
+        if index.exists():
+            return Response(content=index.read_bytes(), media_type="text/html")
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
