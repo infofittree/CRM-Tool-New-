@@ -176,6 +176,7 @@ def ensure_default_admin(db: DatabaseConnection) -> None:
             ("rahul", "Rahul123", "Rahul", "Salesperson"),
             ("kusum", "Kusum123", "Kusum", "Salesperson"),
             ("vivek", "Vivek123", "Vivek", "Procurement"),
+            ("maruti", "Maruti123", "Maruti", "Admin"),
         ]
         
         for username, password, full_name, role in users_data:
