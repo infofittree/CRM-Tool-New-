@@ -24,14 +24,19 @@ _DEFAULT_TZ = "Asia/Kolkata"
 
 
 def _tz_name() -> str:
-    # Streamlit secret first (works on Cloud), then env var, then default.
+    # Check env var first, then try Streamlit secrets.
+    tz = os.getenv("CRM_TIMEZONE")
+    if tz:
+        return tz
     try:
-        import streamlit as st
-        if "CRM_TIMEZONE" in st.secrets:
-            return str(st.secrets["CRM_TIMEZONE"])
+        import sys
+        if "streamlit" in sys.modules:
+            import streamlit as st
+            if "CRM_TIMEZONE" in st.secrets:
+                return str(st.secrets["CRM_TIMEZONE"])
     except Exception:
         pass
-    return os.getenv("CRM_TIMEZONE", _DEFAULT_TZ)
+    return _DEFAULT_TZ
 
 
 def _tz():

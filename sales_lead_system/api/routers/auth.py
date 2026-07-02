@@ -36,7 +36,6 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     if len(attempts) >= _MAX_ATTEMPTS:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many login attempts. Try again later.")
 
-    ensure_default_admin(_get_db_connection())
     user = db.scalar(
         select(User).where(
             User.username == body.username,

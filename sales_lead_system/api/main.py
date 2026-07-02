@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 # Ensure the sales_lead_system package root is on sys.path so "from api..." imports work
 _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,6 +62,20 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+
+@app.middleware("http")
+async def suppress_options_errors(request: Request, call_next):
+    response = await call_next(request)
+    if request.method == "OPTIONS" and response.status_code >= 400:
+        from starlette.responses import Response
+        return Response(status_code=200)
+    return response
+
+
+# Suppress noisy OPTIONS request logging
+import logging
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(leads.router, prefix="/api/v1/leads", tags=["leads"])
@@ -69,3 +83,8 @@ app.include_router(followups.router, prefix="/api/v1/followups", tags=["followup
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(inquiries.router, prefix="/api/v1", tags=["inquiries"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["analytics"])
+
+
+@app.api_route("/{path:path}", methods=["OPTIONS"])
+async def catch_all_options(path: str):
+    return Response(status_code=200)

@@ -85,9 +85,11 @@ class MySQLSettings:
 
 def _read_streamlit_secrets() -> dict:
     try:
-        import streamlit as st
-        if "mysql" in st.secrets:
-            return dict(st.secrets["mysql"])
+        import sys
+        if "streamlit" in sys.modules:
+            import streamlit as st
+            if "mysql" in st.secrets:
+                return dict(st.secrets["mysql"])
     except Exception:
         pass
     return {}
