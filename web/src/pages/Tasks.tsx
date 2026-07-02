@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTaskQueue } from "@/hooks/useDashboard";
@@ -75,6 +75,16 @@ export default function Tasks() {
   const [wizardSuccess, setWizardSuccess] = useState("");
 
   const { data, isLoading } = useTaskQueue();
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    if (selectedTask) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [selectedTask]);
   const { data: leadsData } = useQuery({
     queryKey: ["tasks", "my-leads", user?.full_name],
     queryFn: () => api.get("/leads", { params: { assigned_to: user?.full_name, page_size: 1 } }).then((r) => r.data.total || 0),
@@ -282,18 +292,22 @@ export default function Tasks() {
       {/* Task Detail Drawer */}
       {selectedTask && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => { setSelectedTask(null); setOutcomeNotes(""); }} />
-          <div className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-2xl border-l border-border overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-border z-10 px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <h2 className="font-bold text-sm truncate">{selectedTask.company_name}</h2>
+          <div className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-fade-in" onClick={() => { setSelectedTask(null); setOutcomeNotes(""); }} />
+          <div className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-[var(--shadow-modal)] border-l border-border/40 flex flex-col animate-slide-in-right">
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-border/40 z-10 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                <h2 className="font-bold text-[15px] truncate">{selectedTask.company_name}</h2>
+                <span className="text-[11px] text-muted-foreground/50 font-medium">{selectedTask.standard_status}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setSelectedTask(null); setOutcomeNotes(""); }}>
-                <X className="w-4 h-4" />
-              </Button>
+              <button onClick={() => { setSelectedTask(null); setOutcomeNotes(""); }} className="p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                <X className="w-4 h-4 text-muted-foreground/60" />
+              </button>
             </div>
 
-            <div className="p-5 space-y-5">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
               {/* Workflow Header */}
               {selectedTask.bucket !== "completed" && selectedTask.discussion && (
                 <div className="rounded-[14px] bg-gradient-to-br from-primary/[0.04] to-primary/[0.02] border border-primary/20 p-4 space-y-2">
@@ -429,7 +443,7 @@ export default function Tasks() {
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
+              <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-border/40 px-6 py-4 -mx-6 -mb-5 flex items-center gap-3">
                 {selectedTask.bucket !== "completed" && !wizardSuccess ? (
                   <>
                     <Button size="lg" className="flex-1 gap-2 bg-primary hover:bg-primary/90 rounded-[12px]" onClick={() => setShowActivityWizard(true)}>
