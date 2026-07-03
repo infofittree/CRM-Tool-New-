@@ -36,7 +36,6 @@ export default function AppShell() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Desktop header */}
         <header className="hidden lg:flex h-14 items-center justify-end gap-4 px-6 bg-white/60 backdrop-blur-md border-b border-border/50 shrink-0">
-          {showSelector && <SalespersonSelector />}
         </header>
         {/* Mobile header */}
         <header className="h-14 lg:hidden flex items-center gap-3 px-4 bg-white/80 backdrop-blur-md border-b border-border/50 shrink-0">

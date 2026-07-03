@@ -3,12 +3,12 @@ import api, { type Lead, type PaginatedLeads } from "@/lib/api";
 
 const STALE = { staleTime: 30_000, gcTime: 120_000, refetchOnWindowFocus: false };
 
-export function useLeads(page = 1, pageSize = 25, search = "", status = "", country = "", priority = "") {
+export function useLeads(page = 1, pageSize = 25, search = "", status = "", country = "", priority = "", assigned = "") {
   return useQuery<PaginatedLeads>({
-    queryKey: ["leads", page, pageSize, search, status, country, priority],
+    queryKey: ["leads", page, pageSize, search, status, country, priority, assigned],
     queryFn: () =>
       api
-        .get("/leads", { params: { page, page_size: pageSize, search, status, country, priority_level: priority } })
+        .get("/leads", { params: { page, page_size: pageSize, search, status, country, priority_level: priority, assigned_to: assigned } })
         .then((r) => r.data),
     placeholderData: (prev) => prev,
     ...STALE,

@@ -96,7 +96,7 @@ export default function LeadManagement() {
   const [assignedFilter, setAssignedFilter] = useState("");
   const [scoreFilter, setScoreFilter] = useState("");
   const pageSize = 25;
-  const { data, isLoading } = useLeads(page, pageSize, search, status, countryFilter, priorityFilter);
+  const { data, isLoading } = useLeads(page, pageSize, search, status, countryFilter, priorityFilter, assignedFilter);
   const { data: filterOptions } = useLeadFilterOptions();
   const navigate = useNavigate();
 
@@ -108,18 +108,17 @@ export default function LeadManagement() {
   const uniqueAssigned = filterOptions?.assigned || [];
   const uniqueScores = ["HOT", "WARM", "COLD"];
 
-  // Client-side filtering only for assigned and score (not supported by backend)
+  // Client-side filtering only for score (not supported by backend)
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
     return data.items.filter((l: any) => {
-      if (assignedFilter && l.assigned_to !== assignedFilter) return false;
       if (scoreFilter) {
         const band = scoreBand(l.lead_score);
         if (band.label !== scoreFilter) return false;
       }
       return true;
     });
-  }, [data, assignedFilter, scoreFilter]);
+  }, [data, scoreFilter]);
 
   const hasActiveFilters = countryFilter || priorityFilter || assignedFilter || scoreFilter;
 
@@ -169,6 +168,16 @@ export default function LeadManagement() {
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>{s || "All Statuses"}</option>
+          ))}
+        </select>
+        <select
+          value={assignedFilter}
+          onChange={(e) => { setAssignedFilter(e.target.value); setPage(1); }}
+          className="h-10 px-3 rounded-xl border border-input bg-background text-sm transition-all duration-150 hover:border-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 appearance-none cursor-pointer"
+        >
+          <option value="">All Salespeople</option>
+          {uniqueAssigned.map((name) => (
+            <option key={name} value={name}>{name}</option>
           ))}
         </select>
       </div>
