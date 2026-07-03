@@ -88,8 +88,14 @@ class CRMService:
             select(User.full_name).where(User.role.in_(["Salesperson", "Manager", "Admin"]), User.is_active.is_(True))
         ).all()
         assigned = self.session.scalars(select(Lead.assigned_to).where(Lead.assigned_to.is_not(None)).distinct()).all()
-        values = sorted({name for name in [*user_names, *assigned] if name})
-        return values or ["Unassigned"]
+        # Deduplicate by lowercase comparison, keeping the first properly-cased version
+        seen = set()
+        unique = []
+        for name in [*user_names, *assigned]:
+            if name and name.lower() not in seen:
+                seen.add(name.lower())
+                unique.append(name)
+        return sorted(unique) or ["Unassigned"]
 
     def dashboard_metrics(self, user: dict) -> dict[str, Any]:
         """Compute dashboard KPIs scoped by role."""
