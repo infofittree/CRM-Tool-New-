@@ -79,9 +79,13 @@ def lead_filter_options(
     scope = _lead_scope_filter(current_user)
     filters = [Lead.deleted_at.is_(None), scope] if scope is not None else [Lead.deleted_at.is_(None)]
     from sqlalchemy import select, func
-    countries = [r[0] for r in db.scalars(select(func.distinct(Lead.country)).where(*filters, Lead.country.isnot(None))).all()]
-    priorities = [r[0] for r in db.scalars(select(func.distinct(Lead.priority_level)).where(*filters, Lead.priority_level.isnot(None))).all()]
-    assigned = [r[0] for r in db.scalars(select(func.distinct(Lead.assigned_to)).where(*filters, Lead.assigned_to.isnot(None))).all()]
+    from database.models import User
+    countries = [r[0] for r in db.execute(select(func.distinct(Lead.country)).where(*filters, Lead.country.isnot(None))).all()]
+    priorities = [r[0] for r in db.execute(select(func.distinct(Lead.priority_level)).where(*filters, Lead.priority_level.isnot(None))).all()]
+    # Get assigned names from users table (full names, not truncated CSV values)
+    assigned = [r[0] for r in db.execute(
+        select(User.full_name).where(User.role.in_(["Salesperson", "Manager", "Admin"]), User.is_active.is_(True))
+    ).all()]
     return {
         "countries": sorted(set(c for c in countries if c)),
         "priorities": sorted(set(p for p in priorities if p)),
