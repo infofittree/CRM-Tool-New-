@@ -23,7 +23,7 @@ class ValidationResult:
 class ValidationEngine:
     """Validate CRM payloads before insert/update."""
 
-    required_lead_fields = ("lead_id", "company_name", "status")
+    required_lead_fields = ("lead_id", "status")
 
     def validate_lead_payload(self, payload: dict[str, Any]) -> ValidationResult:
         """Validate a lead dictionary."""
