@@ -32,7 +32,7 @@ const tooltipStyle = {
 };
 
 export default function WeeklyReview() {
-  const { selectedSalesperson } = useSalespersonFilter();
+  const { selectedSalesperson, setSelectedSalesperson, salespersons } = useSalespersonFilter();
   const [weekStart, setWeekStart] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - d.getDay());
@@ -83,13 +83,30 @@ export default function WeeklyReview() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-          <BarChart3 className="w-4 h-4" />
-          <span>Pipeline review{selectedSalesperson ? ` · ${selectedSalesperson}` : ""}</span>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+            <BarChart3 className="w-4 h-4" />
+            <span>Pipeline review{selectedSalesperson ? ` · ${selectedSalesperson}` : ""}</span>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-muted-foreground mt-1">{total} leads in scope</p>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Weekly Review</h1>
-        <p className="text-muted-foreground mt-1">{total} leads in scope</p>
+        {salespersons.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-muted-foreground/50 font-medium">Assigned Salesperson</span>
+            <select
+              value={selectedSalesperson || ""}
+              onChange={(e) => setSelectedSalesperson(e.target.value || null)}
+              className="h-9 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+            >
+              <option value="">All Salespeople</option>
+              {salespersons.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Date picker — FIRST */}
