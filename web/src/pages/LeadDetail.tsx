@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { cn, formatDate, scoreBand } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import api from "@/lib/api";
 import {
   fetchInquiries, createInquiry, Inquiry, InquiryCreate, INQUIRY_TYPES, INQUIRY_PRIORITIES,
   DISPLAY_STATUS_LABELS, DISPLAY_STATUS_COLORS,
@@ -14,7 +15,7 @@ import {
 import {
   ArrowLeft, Phone, Mail, Globe, MapPin, Building2,
   User, Briefcase, Calendar, Target, FileText,
-  MessageSquare, Clock, ChevronRight, Plus, X, AlertTriangle, Activity,
+  MessageSquare, Clock, ChevronRight, Plus, X, AlertTriangle, Activity, Pencil,
 } from "lucide-react";
 
 const PRIORITY_BADGES: Record<string, string> = {
@@ -47,6 +48,9 @@ export default function LeadDetail() {
   const { data: health } = useLeadHealth(id || "");
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<InquiryCreate>({
     lead_id: id || "",
     title: "",
@@ -139,6 +143,26 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+            setEditForm({
+              contact_person: lead.contact_person || "",
+              phone: lead.phone || "",
+              email: lead.email || "",
+              company_name: lead.company_name || "",
+              country: lead.country || "",
+              city: lead.city || "",
+              industry: lead.industry || "",
+              website: lead.website || "",
+              product_interest: lead.product_interest || "",
+              status: lead.status || "",
+              priority_level: lead.priority_level || "",
+              remarks: lead.remarks || "",
+              internal_notes: lead.internal_notes || "",
+            });
+            setShowEdit(true);
+          }}>
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </Button>
           <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-md", band.color === "text-band-hot" ? "bg-red-50 text-red-700" : band.color === "text-band-warm" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700")}>
             {band.label}
           </span>
@@ -564,6 +588,71 @@ export default function LeadDetail() {
           </Button>
         </div>
       </Modal>
+
+      {/* Edit Lead Modal */}
+      {showEdit && (
+        <Modal open={showEdit} onClose={() => setShowEdit(false)}>
+          <div className="p-7">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold">Edit Lead</h2>
+              <button onClick={() => setShowEdit(false)} className="p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { key: "company_name", label: "Company Name", type: "text" },
+                { key: "contact_person", label: "Contact Person", type: "text" },
+                { key: "phone", label: "Phone", type: "text" },
+                { key: "email", label: "Email", type: "text" },
+                { key: "country", label: "Country", type: "text" },
+                { key: "city", label: "City", type: "text" },
+                { key: "industry", label: "Industry", type: "text" },
+                { key: "website", label: "Website", type: "text" },
+                { key: "product_interest", label: "Product Interest", type: "text" },
+                { key: "status", label: "Status", type: "select", options: ["Prospect", "Requirement Qualified", "Technical Discussion", "Quotation Sent", "Sample Sent", "Negotiation", "Trial Order", "Nurturing", "Order Closed", "Lost"] },
+                { key: "priority_level", label: "Priority", type: "select", options: ["HIGH", "MEDIUM", "LOW"] },
+              ].map((field) => (
+                <div key={field.key}>
+                  <label className="text-[11px] font-medium text-muted-foreground/60 mb-1 block">{field.label}</label>
+                  {field.type === "select" ? (
+                    <select value={editForm[field.key] || ""} onChange={(e) => setEditForm({ ...editForm, [field.key]: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      {field.options!.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input type="text" value={editForm[field.key] || ""} onChange={(e) => setEditForm({ ...editForm, [field.key]: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  )}
+                </div>
+              ))}
+              <div className="col-span-2">
+                <label className="text-[11px] font-medium text-muted-foreground/60 mb-1 block">Remarks</label>
+                <textarea value={editForm.remarks || ""} onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })} rows={2} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[11px] font-medium text-muted-foreground/60 mb-1 block">Internal Notes</label>
+                <textarea value={editForm.internal_notes || ""} onChange={(e) => setEditForm({ ...editForm, internal_notes: e.target.value })} rows={2} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border/40">
+              <Button variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                setSaving(true);
+                try {
+                  await api.put(`/leads/${id}`, editForm);
+                  setShowEdit(false);
+                  window.location.reload();
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setSaving(false);
+                }
+              }} disabled={saving} className="px-6">
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

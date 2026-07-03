@@ -96,12 +96,12 @@ export default function LeadManagement() {
   const [assignedFilter, setAssignedFilter] = useState("");
   const [scoreFilter, setScoreFilter] = useState("");
   const pageSize = 25;
-  const { data, isLoading } = useLeads(page, pageSize, search, status);
+  const { data, isLoading } = useLeads(page, pageSize, search, status, countryFilter, priorityFilter);
   const navigate = useNavigate();
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
-  // Extract unique values for filter dropdowns
+  // Extract unique values for filter dropdowns from all loaded data
   const uniqueCountries = useMemo(() => {
     if (!data?.items) return [];
     return [...new Set(data.items.map((l: any) => l.country).filter(Boolean))].sort();
@@ -121,12 +121,10 @@ export default function LeadManagement() {
     return ["HOT", "WARM", "COLD"];
   }, []);
 
-  // Client-side filtering for columns without backend support
+  // Client-side filtering only for assigned and score (not supported by backend)
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
     return data.items.filter((l: any) => {
-      if (countryFilter && l.country !== countryFilter) return false;
-      if (priorityFilter && l.priority_level !== priorityFilter) return false;
       if (assignedFilter && l.assigned_to !== assignedFilter) return false;
       if (scoreFilter) {
         const band = scoreBand(l.lead_score);
@@ -134,7 +132,7 @@ export default function LeadManagement() {
       }
       return true;
     });
-  }, [data, countryFilter, priorityFilter, assignedFilter, scoreFilter]);
+  }, [data, assignedFilter, scoreFilter]);
 
   const hasActiveFilters = countryFilter || priorityFilter || assignedFilter || scoreFilter;
 
@@ -212,13 +210,13 @@ export default function LeadManagement() {
                   <span className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Contact</span>
                 </th>
                 <th className="text-left py-3.5 px-4">
-                  <FilterDropdown label="Country" options={uniqueCountries} value={countryFilter} onChange={setCountryFilter} />
+                  <FilterDropdown label="Country" options={uniqueCountries} value={countryFilter} onChange={(v) => { setCountryFilter(v); setPage(1); }} />
                 </th>
                 <th className="text-left py-3.5 px-4">
                   <FilterDropdown label="Status" options={STATUSES.filter(Boolean)} value={status} onChange={(v) => { setStatus(v); setPage(1); }} />
                 </th>
                 <th className="text-left py-3.5 px-4">
-                  <FilterDropdown label="Priority" options={uniquePriorities} value={priorityFilter} onChange={setPriorityFilter} />
+                  <FilterDropdown label="Priority" options={uniquePriorities} value={priorityFilter} onChange={(v) => { setPriorityFilter(v); setPage(1); }} />
                 </th>
                 <th className="text-left py-3.5 px-4">
                   <FilterDropdown label="Assigned" options={uniqueAssigned} value={assignedFilter} onChange={setAssignedFilter} />

@@ -35,6 +35,8 @@ def list_leads(
     search: str | None = Query(None),
     status: str | None = Query(None),
     assigned_to: str | None = Query(None),
+    country: str | None = Query(None),
+    priority_level: str | None = Query(None),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -45,6 +47,10 @@ def list_leads(
     if assigned_to:
         from sqlalchemy import func
         filters.append(func.lower(Lead.assigned_to) == assigned_to.lower())
+    if country:
+        filters.append(Lead.country == country)
+    if priority_level:
+        filters.append(Lead.priority_level == priority_level)
     if search:
         pattern = f"%{search}%"
         from sqlalchemy import or_

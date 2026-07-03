@@ -112,7 +112,11 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
   const [customerRequirements, setCustomerRequirements] = useState<string[]>([]);
   const [notInterestedReason, setNotInterestedReason] = useState<string>("");
   const [customResponseDate, setCustomResponseDate] = useState("");
-  const [followupDate, setFollowupDate] = useState("");
+  const [followupDate, setFollowupDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return d.toISOString().split("T")[0];
+  });
   const [nextFollowupMode, setNextFollowupMode] = useState<ActionKey | "">("");
   const [notes, setNotes] = useState("");
 
