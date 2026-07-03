@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLeads } from "@/hooks/useLeads";
+import { useLeads, useLeadFilterOptions } from "@/hooks/useLeads";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, scoreBand } from "@/lib/utils";
@@ -97,29 +97,16 @@ export default function LeadManagement() {
   const [scoreFilter, setScoreFilter] = useState("");
   const pageSize = 25;
   const { data, isLoading } = useLeads(page, pageSize, search, status, countryFilter, priorityFilter);
+  const { data: filterOptions } = useLeadFilterOptions();
   const navigate = useNavigate();
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
-  // Extract unique values for filter dropdowns from all loaded data
-  const uniqueCountries = useMemo(() => {
-    if (!data?.items) return [];
-    return [...new Set(data.items.map((l: any) => l.country).filter(Boolean))].sort();
-  }, [data]);
-
-  const uniquePriorities = useMemo(() => {
-    if (!data?.items) return [];
-    return [...new Set(data.items.map((l: any) => l.priority_level).filter(Boolean))].sort();
-  }, [data]);
-
-  const uniqueAssigned = useMemo(() => {
-    if (!data?.items) return [];
-    return [...new Set(data.items.map((l: any) => l.assigned_to).filter(Boolean))].sort();
-  }, [data]);
-
-  const uniqueScores = useMemo(() => {
-    return ["HOT", "WARM", "COLD"];
-  }, []);
+  // Use backend-provided unique values for filter dropdowns (no duplicates)
+  const uniqueCountries = filterOptions?.countries || [];
+  const uniquePriorities = filterOptions?.priorities || [];
+  const uniqueAssigned = filterOptions?.assigned || [];
+  const uniqueScores = ["HOT", "WARM", "COLD"];
 
   // Client-side filtering only for assigned and score (not supported by backend)
   const filteredItems = useMemo(() => {

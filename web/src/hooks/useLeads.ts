@@ -15,6 +15,14 @@ export function useLeads(page = 1, pageSize = 25, search = "", status = "", coun
   });
 }
 
+export function useLeadFilterOptions() {
+  return useQuery<{ countries: string[]; priorities: string[]; assigned: string[] }>({
+    queryKey: ["leads", "filter-options"],
+    queryFn: () => api.get("/leads/filter-options").then((r) => r.data),
+    ...STALE,
+  });
+}
+
 export function useLead(id: string) {
   return useQuery<Lead>({
     queryKey: ["lead", id],

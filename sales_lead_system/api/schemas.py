@@ -94,7 +94,7 @@ class LeadResponse(BaseModel):
 
 
 class LeadCreate(BaseModel):
-    company_name: str
+    company_name: str | None = None
     contact_person: str | None = None
     phone: str | None = None
     email: str | None = None

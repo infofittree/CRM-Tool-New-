@@ -34,10 +34,6 @@ export default function DataEntry() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!form.company_name.trim()) {
-      setError("Company name is required");
-      return;
-    }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setError("Please enter a valid email address");
       return;
@@ -80,7 +76,7 @@ export default function DataEntry() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Company Name *" value={form.company_name} onChange={(v) => handleChange("company_name", v)} placeholder="e.g. Acme Corp" />
+              <FormField label="Company Name" value={form.company_name} onChange={(v) => handleChange("company_name", v)} placeholder="e.g. Acme Corp (optional)" />
               <FormField label="Contact Person" value={form.contact_person} onChange={(v) => handleChange("contact_person", v)} placeholder="Full name" />
               <FormField label="Phone" value={form.phone} onChange={(v) => handleChange("phone", v)} placeholder="+1 234 567 890" />
               <FormField label="Email" value={form.email} onChange={(v) => handleChange("email", v)} placeholder="contact@company.com" />
