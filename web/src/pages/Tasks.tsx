@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTaskQueue } from "@/hooks/useDashboard";
@@ -72,6 +72,7 @@ export default function Tasks() {
   const [nextFollowupDate, setNextFollowupDate] = useState("");
   const [showAbandonWarning, setShowAbandonWarning] = useState(false);
   const [showActivityWizard, setShowActivityWizard] = useState(false);
+  const [wizardFollowupId, setWizardFollowupId] = useState<number | null>(null);
   const [wizardSuccess, setWizardSuccess] = useState("");
 
   const { data, isLoading } = useTaskQueue();
@@ -84,6 +85,14 @@ export default function Tasks() {
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
+  }, [selectedTask]);
+
+  // Scroll drawer to top when a task is opened
+  const drawerContentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (selectedTask && drawerContentRef.current) {
+      drawerContentRef.current.scrollTop = 0;
+    }
   }, [selectedTask]);
   const { data: leadsData } = useQuery({
     queryKey: ["tasks", "my-leads", user?.full_name],
@@ -165,6 +174,7 @@ export default function Tasks() {
 
   const onWizardComplete = (result: ActivityWizardResponse) => {
     setShowActivityWizard(false);
+    setWizardFollowupId(null);
     setWizardSuccess(
       result.next_followup_id
         ? `Task completed. ${result.next_action_type} created — due ${new Date(result.next_followup_date!).toLocaleDateString()}.`
@@ -179,6 +189,7 @@ export default function Tasks() {
     if (!selectedTask) return;
     // If followup_id exists, open wizard directly
     if (selectedTask.followup_id) {
+      setWizardFollowupId(selectedTask.followup_id);
       setShowActivityWizard(true);
       return;
     }
@@ -191,8 +202,9 @@ export default function Tasks() {
         discussion: selectedTask.discussion || "Follow-Up",
         next_action: selectedTask.next_action || "Call Again",
       });
-      // Update the selected task with the new followup_id
-      setSelectedTask({ ...selectedTask, followup_id: res.data.followup_id });
+      const newId = res.data.followup_id;
+      setSelectedTask({ ...selectedTask, followup_id: newId });
+      setWizardFollowupId(newId);
       setShowActivityWizard(true);
     } catch (err) {
       console.error("Failed to create follow-up:", err);
@@ -331,7 +343,7 @@ export default function Tasks() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            <div ref={drawerContentRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
               {/* Workflow Header */}
               {selectedTask.bucket !== "completed" && selectedTask.discussion && (
                 <div className="rounded-[14px] bg-gradient-to-br from-primary/[0.04] to-primary/[0.02] border border-primary/20 p-4 space-y-2">
@@ -492,15 +504,15 @@ export default function Tasks() {
       )}
 
       {/* Activity Wizard */}
-      {showActivityWizard && selectedTask && selectedTask.followup_id && (
+      {showActivityWizard && selectedTask && wizardFollowupId && (
         <ActivityWizard
-          followupId={selectedTask.followup_id}
+          followupId={wizardFollowupId}
           leadStatus={selectedTask.status}
           assignedTo={selectedTask.assigned_to || ""}
           companyName={selectedTask.company_name}
           taskType={selectedTask.next_action || ""}
           taskDiscussion={selectedTask.discussion || ""}
-          onClose={() => setShowActivityWizard(false)}
+          onClose={() => { setShowActivityWizard(false); setWizardFollowupId(null); }}
           onComplete={onWizardComplete}
         />
       )}
