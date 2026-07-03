@@ -10,7 +10,7 @@ const routeLabels: Record<string, string> = {
   "/tasks": "Tasks & Follow-ups",
   "/analytics": "Analytics",
   "/team": "Analytics & Team",
-  "/weekly-review": "Weekly Review",
+  "/weekly-review": "Analytics",
   "/data-entry": "Data Entry",
   "/settings": "Settings",
 };
