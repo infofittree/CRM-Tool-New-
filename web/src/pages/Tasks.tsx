@@ -175,6 +175,30 @@ export default function Tasks() {
     queryClient.invalidateQueries({ queryKey: ["lead"] });
   };
 
+  const handleCompleteTask = async () => {
+    if (!selectedTask) return;
+    // If followup_id exists, open wizard directly
+    if (selectedTask.followup_id) {
+      setShowActivityWizard(true);
+      return;
+    }
+    // Otherwise create a quick follow-up first, then open wizard
+    try {
+      const res = await api.post("/followups", {
+        lead_id: selectedTask.lead_id,
+        followup_date: new Date().toISOString().split("T")[0],
+        next_followup: new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0],
+        discussion: selectedTask.discussion || "Follow-Up",
+        next_action: selectedTask.next_action || "Call Again",
+      });
+      // Update the selected task with the new followup_id
+      setSelectedTask({ ...selectedTask, followup_id: res.data.followup_id });
+      setShowActivityWizard(true);
+    } catch (err) {
+      console.error("Failed to create follow-up:", err);
+    }
+  };
+
   return (
     <div className="p-5 lg:p-7 space-y-5 max-w-[1400px] mx-auto">
       {/* Summary Cards */}
@@ -446,7 +470,7 @@ export default function Tasks() {
               <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-border/40 px-6 py-4 -mx-6 -mb-5 flex items-center gap-3">
                 {selectedTask.bucket !== "completed" && !wizardSuccess ? (
                   <>
-                    <Button size="lg" className="flex-1 gap-2 bg-primary hover:bg-primary/90 rounded-[12px]" onClick={() => setShowActivityWizard(true)}>
+                    <Button size="lg" className="flex-1 gap-2 bg-primary hover:bg-primary/90 rounded-[12px]" onClick={handleCompleteTask}>
                       <CheckCircle2 className="w-4 h-4" />
                       {getTaskTypeConfig(selectedTask.discussion, selectedTask.next_action).ctaLabel}
                     </Button>
