@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,8 @@ import { fetchInquirySummary, type InquirySummary } from "@/lib/inquiries";
 import {
   TrendingUp, Users, Sparkles, BarChart3, ListTodo,
   ArrowRight, Target, CheckCircle2, AlertTriangle, Clock, Timer,
-  MessageSquare, AlertCircle, Inbox, CircleDot, Flame, Eye,
+  MessageSquare, AlertCircle, Inbox, CircleDot, Flame, Eye, User,
 } from "lucide-react";
-import { useSalespersonFilter } from "@/lib/salespersonContext";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -61,24 +60,39 @@ function ActionItem({ title, description, icon: Icon, color, onClick, badge }: {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { selectedSalesperson, setSelectedSalesperson } = useSalespersonFilter();
-  const { data: tasks } = useTaskQueue();
-  const { data: allLeads } = useDashboardLeads(500);
-  const { data: pipelineHealth } = usePipelineHealth();
-  const { data: execSummary } = useExecutiveSummary();
-  const { data: prodScores } = useProductivity();
+  const navigate = useNavigate();
+  const role = user?.role;
+  const isMgmt = role === "Admin" || role === "Manager";
+  const isProcurement = role === "Procurement";
+  const isSalesperson = role === "Salesperson";
+
+  // ── Dashboard-specific salesperson filter (independent from Analytics) ──
+  const [dashboardPerson, setDashboardPerson] = useState<string | null>(null);
+  const [dashboardPeople, setDashboardPeople] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isMgmt) return;
+    api.get("/users/salespersons").then((r) => setDashboardPeople(r.data || [])).catch(() => {});
+  }, [isMgmt]);
+
+  // Reset filter when role changes
+  useEffect(() => {
+    if (!isMgmt) setDashboardPerson(null);
+  }, [isMgmt]);
+
+  // Pass dashboardPerson to all hooks (overrides shared context for Admin/Manager)
+  const dp = isMgmt ? dashboardPerson : undefined;
+  const { data: tasks } = useTaskQueue(7, 20, dp);
+  const { data: allLeads } = useDashboardLeads(500, dp);
+  const { data: pipelineHealth } = usePipelineHealth(dp);
+  const { data: execSummary } = useExecutiveSummary(dp);
+  const { data: prodScores } = useProductivity(dp);
   const { data: inquirySummary } = useQuery<InquirySummary>({
     queryKey: ["inquiry-summary"],
     queryFn: fetchInquirySummary,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
-  const navigate = useNavigate();
-
-  const role = user?.role;
-  const isMgmt = role === "Admin" || role === "Manager";
-  const isProcurement = role === "Procurement";
-  const isSalesperson = role === "Salesperson";
 
   const todayTasks = tasks?.today_capped || [];
   const overdueTasks = tasks?.overdue || [];
@@ -130,18 +144,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* Context Banner */}
-        {selectedSalesperson && (
-          <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-blue-50 border border-blue-200 text-sm">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Users className="w-4 h-4 text-blue-600" /></div>
-            <div>
-              <p className="font-semibold text-blue-800">Viewing <span className="underline decoration-blue-300 underline-offset-2">{selectedSalesperson}</span></p>
-              <p className="text-[12px] text-blue-600/70">All data reflects this salesperson's activity</p>
-            </div>
-            <Button variant="ghost" size="sm" className="ml-auto text-blue-600 hover:text-blue-800 hover:bg-blue-100 gap-1 text-xs" onClick={() => setSelectedSalesperson(null)}>Clear filter</Button>
-          </div>
-        )}
 
         {/* Priorities + Pipeline */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -431,17 +433,34 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Context Banner */}
-      {selectedSalesperson && (
-        <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-blue-50 border border-blue-200 text-sm">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Users className="w-4 h-4 text-blue-600" /></div>
-          <div>
-            <p className="font-semibold text-blue-800">Viewing <span className="underline decoration-blue-300 underline-offset-2">{selectedSalesperson}</span></p>
-            <p className="text-[12px] text-blue-600/70">All data reflects this salesperson's activity</p>
-          </div>
-          <Button variant="ghost" size="sm" className="ml-auto text-blue-600 hover:text-blue-800 hover:bg-blue-100 gap-1 text-xs" onClick={() => setSelectedSalesperson(null)}>Clear filter</Button>
+      {/* Dashboard Context Filter — Admin/Manager only */}
+      <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-border/60 bg-card">
+        <div className="flex items-center gap-2.5">
+          <Users className="w-4 h-4 text-primary" />
+          <span className="text-[13px] font-medium text-foreground/80">Viewing Dashboard For</span>
         </div>
-      )}
+        <select
+          value={dashboardPerson || ""}
+          onChange={(e) => setDashboardPerson(e.target.value || null)}
+          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[180px]"
+        >
+          <option value="">Entire Team</option>
+          {dashboardPeople.map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
+        {dashboardPerson && (
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/[0.06] border border-primary/20">
+              <User className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[12px] font-semibold text-primary">{dashboardPerson}</span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setDashboardPerson(null)}>
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Action Items */}
       <div>

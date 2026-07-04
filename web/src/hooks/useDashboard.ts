@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api, {
   type CrmAlert,
@@ -16,13 +17,22 @@ import { useSalespersonFilter } from "@/lib/salespersonContext";
 
 const STALE = { staleTime: 30_000, gcTime: 120_000, refetchOnWindowFocus: false };
 
+/** Read salesperson from shared context (used by Analytics and fallback). */
 function sp() {
   const { selectedSalesperson } = useSalespersonFilter();
   return selectedSalesperson;
 }
 
-export function useDashboardCounts() {
-  const s = sp();
+/**
+ * Resolve the effective salesperson name:
+ * use the explicit override when provided, otherwise fall back to context.
+ */
+function resolve(override?: string | null): string | null {
+  return override !== undefined ? override : sp();
+}
+
+export function useDashboardCounts(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<DashboardCounts>({
     queryKey: ["dashboard", "counts", s],
     queryFn: () => api.get("/dashboard/counts", { params: s ? { salesperson: s } : {} }).then((r) => r.data),
@@ -30,8 +40,8 @@ export function useDashboardCounts() {
   });
 }
 
-export function useEngagementStats(days = 7) {
-  const s = sp();
+export function useEngagementStats(days = 7, salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<EngagementStats>({
     queryKey: ["dashboard", "engagement", days, s],
     queryFn: () => api.get("/dashboard/engagement", { params: { days, ...(s ? { salesperson: s } : {}) } }).then((r) => r.data),
@@ -39,8 +49,8 @@ export function useEngagementStats(days = 7) {
   });
 }
 
-export function useSalespersonStats() {
-  const s = sp();
+export function useSalespersonStats(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<SalespersonStat[]>({
     queryKey: ["dashboard", "salesperson-stats", s],
     queryFn: () => api.get("/dashboard/salesperson-stats", { params: s ? { salesperson: s } : {} }).then((r) => r.data.items),
@@ -48,8 +58,8 @@ export function useSalespersonStats() {
   });
 }
 
-export function useRecentActivities(limit = 12) {
-  const s = sp();
+export function useRecentActivities(limit = 12, salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<ActivityEntry[]>({
     queryKey: ["dashboard", "activities", limit, s],
     queryFn: () => api.get("/dashboard/activities", { params: { limit, ...(s ? { salesperson: s } : {}) } }).then((r) => r.data.items),
@@ -57,8 +67,8 @@ export function useRecentActivities(limit = 12) {
   });
 }
 
-export function useDashboardLeads(limit = 500) {
-  const s = sp();
+export function useDashboardLeads(limit = 500, salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<Lead[]>({
     queryKey: ["dashboard", "leads", limit, s],
     queryFn: () => api.get("/dashboard/leads", { params: { limit, ...(s ? { salesperson: s } : {}) } }).then((r) => r.data.items),
@@ -67,16 +77,31 @@ export function useDashboardLeads(limit = 500) {
   });
 }
 
-export function useTaskQueue(upcomingDays = 7, maxToday = 20) {
-  return useQuery<TaskQueue>({
+export function useTaskQueue(upcomingDays = 7, maxToday = 20, salespersonOverride?: string | null) {
+  const query = useQuery<TaskQueue>({
     queryKey: ["tasks", upcomingDays, maxToday],
     queryFn: () => api.get(`/followups/tasks?upcoming_days=${upcomingDays}&max_today=${maxToday}`).then((r) => r.data),
     ...STALE,
   });
+
+  const filter = salespersonOverride;
+  const data = useMemo(() => {
+    if (!filter || !query.data) return query.data;
+    const match = (t: any) => t.assigned_to?.toLowerCase() === filter.toLowerCase();
+    return {
+      ...query.data,
+      today_capped: query.data.today_capped.filter(match),
+      overdue: query.data.overdue.filter(match),
+      upcoming: query.data.upcoming.filter(match),
+      completed: query.data.completed.filter(match),
+    };
+  }, [query.data, filter]);
+
+  return { ...query, data };
 }
 
-export function usePipelineHealth() {
-  const s = sp();
+export function usePipelineHealth(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<PipelineHealthResponse>({
     queryKey: ["dashboard", "pipeline-health", s],
     queryFn: () => api.get("/dashboard/pipeline-health", { params: s ? { salesperson: s } : {} }).then((r) => r.data),
@@ -84,8 +109,8 @@ export function usePipelineHealth() {
   });
 }
 
-export function useTodayPriorities() {
-  const s = sp();
+export function useTodayPriorities(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<TodayPrioritiesResponse>({
     queryKey: ["dashboard", "today-priorities", s],
     queryFn: () => api.get("/dashboard/today-priorities", { params: s ? { salesperson: s } : {} }).then((r) => r.data),
@@ -93,8 +118,8 @@ export function useTodayPriorities() {
   });
 }
 
-export function useSalespersonKpi() {
-  const s = sp();
+export function useSalespersonKpi(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<SalespersonKpi[]>({
     queryKey: ["dashboard", "salesperson-kpi", s],
     queryFn: () => api.get("/dashboard/salesperson-kpi", { params: s ? { salesperson: s } : {} }).then((r) => r.data.items),
@@ -102,12 +127,23 @@ export function useSalespersonKpi() {
   });
 }
 
-export function useAlerts() {
-  return useQuery<CrmAlert[]>({
+export function useAlerts(salespersonOverride?: string | null) {
+  const query = useQuery<CrmAlert[]>({
     queryKey: ["dashboard", "alerts"],
     queryFn: () => api.get("/dashboard/alerts").then((r) => r.data.items),
     ...STALE,
   });
+
+  const filter = salespersonOverride;
+  const data = useMemo(() => {
+    if (!filter || !query.data) return query.data;
+    return query.data.filter((a: any) => {
+      const name = a.user_name || a.assigned_to || a.created_by;
+      return name?.toLowerCase() === filter.toLowerCase();
+    });
+  }, [query.data, filter]);
+
+  return { ...query, data };
 }
 
 export function useLeadHealth(leadId: string) {

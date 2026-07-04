@@ -20,12 +20,16 @@ function sp() {
   return selectedSalesperson;
 }
 
+function resolve(override?: string | null): string | null {
+  return override !== undefined ? override : sp();
+}
+
 function spParam(s: string | null): Record<string, string> {
   return s ? { salesperson: s } : {};
 }
 
-export function useExecutiveSummary() {
-  const s = sp();
+export function useExecutiveSummary(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<ExecutiveSummary>({
     queryKey: ["analytics", "executive-summary", s],
     queryFn: () => api.get("/analytics/executive-summary", { params: spParam(s) }).then((r) => r.data),
@@ -87,8 +91,8 @@ export function useTrends(days = 30) {
   });
 }
 
-export function useProductivity() {
-  const s = sp();
+export function useProductivity(salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   return useQuery<ProductivityScore[]>({
     queryKey: ["analytics", "productivity", s],
     queryFn: () => api.get("/analytics/productivity", { params: spParam(s) }).then((r) => r.data),
