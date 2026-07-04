@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -41,18 +42,17 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose, view]);
 
-  // Lock body scroll while preserving current position
+  // Lock the actual scroll container (<main>) and preserve its scroll position
   useEffect(() => {
-    const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, scrollY);
-    };
+    const mainEl = document.querySelector("main");
+    if (mainEl) {
+      const savedScrollTop = mainEl.scrollTop;
+      mainEl.style.overflow = "hidden";
+      return () => {
+        mainEl.style.overflow = "";
+        mainEl.scrollTop = savedScrollTop;
+      };
+    }
   }, []);
 
   const handleCompleteTask = useCallback(async () => {
@@ -118,13 +118,12 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
   const typeConfig = getTaskTypeConfig(task.discussion, task.next_action);
   const isCompleted = task.bucket === "completed";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px] animate-fade-in" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]" onClick={onClose}>
       <div
         className={cn(
           "bg-white rounded-2xl shadow-[var(--shadow-modal)] w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col",
           "max-w-[520px] sm:max-w-[600px] md:max-w-[700px] lg:max-w-[780px]",
-          "animate-scale-in",
           "transition-opacity duration-200",
           transitioning ? "opacity-0" : "opacity-100"
         )}
@@ -275,7 +274,8 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
