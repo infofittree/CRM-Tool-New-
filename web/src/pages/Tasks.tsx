@@ -209,10 +209,9 @@ export default function Tasks() {
       </div>
 
       {selectedTask && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-fade-in" onClick={() => { setSelectedTask(null); }} />
-          <div className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-[var(--shadow-modal)] border-l border-border/40 flex flex-col animate-slide-in-right">
-            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-border/40 z-10 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px] animate-fade-in" onClick={() => { setSelectedTask(null); }}>
+          <div className="bg-white rounded-2xl shadow-[var(--shadow-modal)] w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-border/40 z-10 px-6 py-4 flex items-center justify-between shrink-0 rounded-t-2xl">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
                 <h2 className="font-bold text-[15px] truncate">{selectedTask.company_name}</h2>
@@ -269,7 +268,7 @@ export default function Tasks() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {showActivityWizard && selectedTask && wizardFollowupId && (
