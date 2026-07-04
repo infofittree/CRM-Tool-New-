@@ -160,6 +160,7 @@ def _emit(progress: ProgressCallback | None, label: str, detail: str) -> None:
 
 
 def ensure_default_admin(db: DatabaseConnection) -> None:
+    import json
     import os
 
     with db.session_scope() as session:
@@ -167,17 +168,14 @@ def ensure_default_admin(db: DatabaseConnection) -> None:
         if has_user:
             return
         
-        # Create default users
-        users_data = [
-            ("yashsharma", "Yash123", "Yash Sharma", "Admin"),
-            ("poonam", "Poonam123", "Poonam", "Manager"),
-            ("shiksha", "Shiksha123", "Shiksha", "Admin"),
-            ("vaidehi", "Vaidehi123", "Vaidehi", "Salesperson"),
-            ("rahul", "Rahul123", "Rahul", "Salesperson"),
-            ("kusum", "Kusum123", "Kusum", "Salesperson"),
-            ("vivek", "Vivek123", "Vivek", "Procurement"),
-            ("maruti", "Maruti123", "Maruti", "Admin"),
-        ]
+        # Default users loaded from env var (JSON array of [username, password, full_name, role])
+        # Falls back to empty list if not set — never hardcodes passwords in source
+        users_json = os.getenv("DEFAULT_USERS_JSON", "")
+        if users_json:
+            users_data = json.loads(users_json)
+        else:
+            logging.getLogger("api").warning("DEFAULT_USERS_JSON not set — no default users created")
+            return
         
         for username, password, full_name, role in users_data:
             session.add(

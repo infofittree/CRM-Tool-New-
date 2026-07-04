@@ -3,6 +3,7 @@
 *.env
 **/config/.env
 .streamlit/secrets.toml
+check_followup.py
 
 # ─── Python ───────────────────────────────────────────────
 __pycache__/
