@@ -6,8 +6,9 @@
 check_followup.py
 seed_postgres.py
 
-# ─── Build output (rebuilt by Railway, never commit) ──────
-web/dist/
+# ─── Build output (rebuilt locally before deploying) ──────
+# NOTE: web/dist/ must be committed because Railway only runs Python (no Node build step)
+# Rebuild locally with: cd web && VITE_API_URL=/api/v1 npx vite build
 
 # ─── Python ───────────────────────────────────────────────
 __pycache__/
