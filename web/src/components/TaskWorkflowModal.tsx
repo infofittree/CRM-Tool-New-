@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
   const [taskError, setTaskError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [transitioning, setTransitioning] = useState(false);
+  const detailsScrollRef = useRef<HTMLDivElement>(null);
+  const wizardKey = useRef(0);
 
   // ESC key support
   useEffect(() => {
@@ -39,10 +41,18 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose, view]);
 
-  // Lock body scroll
+  // Lock body scroll while preserving current position
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const handleCompleteTask = useCallback(async () => {
@@ -53,6 +63,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
       setTimeout(() => {
         setWizardFollowupId(task.followup_id);
         setView("wizard");
+        wizardKey.current += 1;
         setTransitioning(false);
       }, 200);
       return;
@@ -71,6 +82,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
       setTimeout(() => {
         setWizardFollowupId(newId);
         setView("wizard");
+        wizardKey.current += 1;
         setTransitioning(false);
       }, 200);
     } catch (err: any) {
@@ -134,7 +146,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div ref={detailsScrollRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               {/* Task type card */}
               {!isCompleted && task.discussion && (
                 <div className="rounded-[14px] bg-gradient-to-br from-primary/[0.04] to-primary/[0.02] border border-primary/20 p-4 space-y-2">
@@ -241,6 +253,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
         {/* ── View: Wizard (embedded ActivityWizard) ── */}
         {view === "wizard" && wizardFollowupId && (
           <ActivityWizard
+            key={wizardKey.current}
             followupId={wizardFollowupId}
             leadStatus={task.status}
             assignedTo={task.assigned_to || ""}
