@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { completeActivity, type ActivityWizardResponse } from "@/lib/api";
 import {
   Phone, Mail, MessageSquare, MessageCircle, Users, MoreHorizontal,
-  CheckCircle2, ArrowRight, ArrowLeft, Calendar, Loader2, X, ThumbsUp, ThumbsDown, HelpCircle,
+  CheckCircle2, ArrowRight, ArrowLeft, Calendar, Loader2, X, ThumbsUp, ThumbsDown, HelpCircle, AlertTriangle,
 } from "lucide-react";
 
 interface ActivityWizardProps {
@@ -88,6 +88,7 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
   const isResponseCheck = taskType === "Await Customer Response" || taskDiscussion === "Check Customer Response";
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [wizardError, setWizardError] = useState("");
 
   // ── Response check state ──
   const [responded, setResponded] = useState<boolean | null>(null);
@@ -221,11 +222,14 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
+    setWizardError("");
     try {
       const payload = buildPayload();
       const result = await completeActivity(followupId, payload);
       onComplete(result);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Failed to complete activity. Please try again.";
+      setWizardError(msg);
       console.error("Activity wizard submission failed:", err);
     } finally {
       setSubmitting(false);
@@ -826,6 +830,12 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
         </div>
 
         {/* Footer */}
+        {wizardError && (
+          <div className="mx-5 mb-3 p-3 rounded-xl bg-destructive/8 border border-destructive/15 text-destructive text-sm flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {wizardError}
+          </div>
+        )}
         <div className="flex items-center justify-between p-5 border-t">
           <Button variant="ghost" onClick={() => step > 1 ? setStep(step - 1) : onClose()} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
