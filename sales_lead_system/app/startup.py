@@ -172,7 +172,11 @@ def ensure_default_admin(db: DatabaseConnection) -> None:
         # Falls back to empty list if not set — never hardcodes passwords in source
         users_json = os.getenv("DEFAULT_USERS_JSON", "")
         if users_json:
-            users_data = json.loads(users_json)
+            try:
+                users_data = json.loads(users_json)
+            except (json.JSONDecodeError, TypeError):
+                logging.getLogger("api").error("DEFAULT_USERS_JSON contains invalid JSON — no default users created")
+                return
         else:
             logging.getLogger("api").warning("DEFAULT_USERS_JSON not set — no default users created")
             return

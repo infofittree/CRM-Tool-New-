@@ -83,7 +83,7 @@ MYSQL_USER=root
 MYSQL_PASSWORD=your_password
 MYSQL_DATABASE=sales_lead_crm
 CRM_ADMIN_USER=admin
-CRM_ADMIN_PASSWORD=admin123
+CRM_ADMIN_PASSWORD=change_this_password
 ```
 
 Verify:

@@ -66,11 +66,16 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def suppress_options_errors(request: Request, call_next):
+async def security_headers_and_options(request: Request, call_next):
     response = await call_next(request)
     if request.method == "OPTIONS" and response.status_code >= 400:
-        from starlette.responses import Response
         return Response(status_code=200)
+    # Security headers for all responses
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["X-XSS-Protection"] = "0"
     return response
 
 

@@ -55,7 +55,7 @@ Browser → Vite (port 5173) → proxy /api → FastAPI (port 8000) → SQLAlche
 - **Primary**: SQLite (existing `.db` file with 359 leads, 68 followups)
 - **Alternative**: MySQL (configurable via `.env`)
 - **Migrations**: Schema manager auto-runs on startup (Phase 2–7)
-- **Bootstrap**: Admin user seeded on first run (`admin` / `admin123`)
+- **Bootstrap**: Admin user seeded on first run via `DEFAULT_USERS_JSON` env var
 
 ### API Health
 - All REST endpoints return 200 OK with real data
@@ -80,7 +80,7 @@ cd web
 npm run dev
 ```
 
-Open `http://localhost:5173` → Login with `admin` / `admin123`
+Open `http://localhost:5173` → Login with credentials from `DEFAULT_USERS_JSON` env var
 
 ---
 

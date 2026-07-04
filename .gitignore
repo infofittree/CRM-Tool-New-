@@ -4,6 +4,10 @@
 **/config/.env
 .streamlit/secrets.toml
 check_followup.py
+seed_postgres.py
+
+# ─── Build output (rebuilt by Railway, never commit) ──────
+web/dist/
 
 # ─── Python ───────────────────────────────────────────────
 __pycache__/
