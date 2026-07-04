@@ -219,7 +219,7 @@ export default function Tasks() {
               </div>
               <button onClick={() => { setSelectedTask(null); }} className="p-2 rounded-lg hover:bg-muted/60 transition-colors"><X className="w-4 h-4 text-muted-foreground/60" /></button>
             </div>
-            <div ref={drawerContentRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            <div ref={drawerContentRef} className="overflow-y-auto px-6 py-5 space-y-5 max-h-[calc(90vh-140px)]">
               {selectedTask.bucket !== "completed" && selectedTask.discussion && (
                 <div className="rounded-[14px] bg-gradient-to-br from-primary/[0.04] to-primary/[0.02] border border-primary/20 p-4 space-y-2">
                   <span className={cn("text-xs font-bold px-2 py-0.5 rounded border inline-block", getTaskTypeConfig(selectedTask.discussion, selectedTask.next_action).badgeColor)}>{getTaskTypeConfig(selectedTask.discussion, selectedTask.next_action).badge}</span>
@@ -250,7 +250,7 @@ export default function Tasks() {
               )}
               {wizardSuccess && (<div className="rounded-[14px] bg-emerald-50 border border-emerald-200 p-4 text-center"><CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" /><p className="text-sm font-semibold text-emerald-800">Activity Recorded</p><p className="text-xs text-emerald-600 mt-1">{wizardSuccess}</p></div>)}
             </div>
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-border/40 px-6 py-4 -mx-6 -mb-5">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-border/40 px-6 py-4 rounded-b-2xl">
               {taskError && (<div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/8 border border-destructive/15 text-destructive text-sm mb-3"><AlertTriangle className="w-4 h-4 shrink-0" /><span>{taskError}</span></div>)}
               <div className="flex items-center gap-3">
                 {selectedTask.bucket !== "completed" && !wizardSuccess ? (
