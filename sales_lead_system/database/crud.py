@@ -128,6 +128,7 @@ class FollowUpCRUD:
             raise ValueError("; ".join(result.errors))
         followup = FollowUp(**LeadCRUD._clean_model_payload(FollowUp, payload))
         session.add(followup)
+        session.flush()  # Generate auto-incremented followup_id
         return followup
 
     def get_followups(self, session: Session, lead_id: str) -> list[FollowUp]:
