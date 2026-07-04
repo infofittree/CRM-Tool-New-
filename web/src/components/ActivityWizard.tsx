@@ -16,6 +16,8 @@ interface ActivityWizardProps {
   taskDiscussion?: string;
   onClose: () => void;
   onComplete: (result: ActivityWizardResponse) => void;
+  /** When true, renders wizard content without its own overlay/card wrapper — for embedding inside TaskWorkflowModal */
+  embedded?: boolean;
 }
 
 type ActionKey = "call" | "email" | "whatsapp" | "meeting" | "other";
@@ -84,7 +86,7 @@ const NO_RESPONSE_ACTIONS = [
   { value: "custom", label: "Custom Action", desc: "Do something else" },
 ];
 
-export default function ActivityWizard({ followupId, leadStatus, assignedTo, companyName, taskType, taskDiscussion, onClose, onComplete }: ActivityWizardProps) {
+export default function ActivityWizard({ followupId, leadStatus, assignedTo, companyName, taskType, taskDiscussion, onClose, onComplete, embedded }: ActivityWizardProps) {
   const isResponseCheck = taskType === "Await Customer Response" || taskDiscussion === "Check Customer Response";
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -240,22 +242,21 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
 
   const responseDateForDisplay = responseCheckDate === "custom" ? customResponseDate : responseCheckDate;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
-          <div>
-            <h2 className="text-lg font-bold">Complete Activity</h2>
-            <p className="text-sm text-muted-foreground">{companyName}</p>
-            {isResponseCheck && (
-              <span className="inline-block mt-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Check Customer Response</span>
-            )}
-          </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+  const innerContent = (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between p-5 border-b">
+        <div>
+          <h2 className="text-lg font-bold">Complete Activity</h2>
+          <p className="text-sm text-muted-foreground">{companyName}</p>
+          {isResponseCheck && (
+            <span className="inline-block mt-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Check Customer Response</span>
+          )}
         </div>
+        <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
         {/* Progress */}
         <div className="px-5 pt-4 pb-2">
@@ -867,6 +868,15 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
             </Button>
           )}
         </div>
+    </>
+  );
+
+  if (embedded) return innerContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {innerContent}
       </div>
     </div>
   );
