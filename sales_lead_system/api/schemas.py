@@ -108,6 +108,7 @@ class LeadCreate(BaseModel):
     followup_mode: str | None = None
     last_discussion: str | None = None
     next_action: str | None = None
+    next_action_plan: str | None = None
     remarks: str | None = None
     industry: str | None = None
     website: str | None = None
