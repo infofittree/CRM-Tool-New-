@@ -33,14 +33,13 @@ def _resolve_user(
     user = db.scalar(
         select(User).where(
             User.full_name == salesperson,
-            User.role == "Salesperson",
             User.is_active.is_(True),
             User.deleted_at.is_(None),
         )
     )
     if not user:
-        raise HTTPException(status_code=404, detail=f"Salesperson '{salesperson}' not found")
-    return {"username": user.username, "full_name": user.full_name, "role": "Salesperson"}
+        raise HTTPException(status_code=404, detail=f"User '{salesperson}' not found")
+    return {"username": user.username, "full_name": user.full_name, "role": user.role}
 
 
 @router.get("/executive-summary")

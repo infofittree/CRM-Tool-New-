@@ -46,7 +46,7 @@ def _resolve_salesperson_user(
     """Return a synthetic user dict scoped to the given *salesperson*.
 
     - No *salesperson* → returns current_user (no filtering).
-    - Admin/Manager can specify any active salesperson.
+    - Admin/Manager can specify any active user by full_name.
     - Salesperson can only see their own data (ignores param).
     """
     if not salesperson:
@@ -59,14 +59,13 @@ def _resolve_salesperson_user(
     user = db.scalar(
         select(User).where(
             User.full_name == salesperson,
-            User.role == "Salesperson",
             User.is_active.is_(True),
             User.deleted_at.is_(None),
         )
     )
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Salesperson '{salesperson}' not found")
-    return {"username": user.username, "full_name": user.full_name, "role": "Salesperson"}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User '{salesperson}' not found")
+    return {"username": user.username, "full_name": user.full_name, "role": user.role}
 
 
 @router.get("/counts", response_model=DashboardCounts)
