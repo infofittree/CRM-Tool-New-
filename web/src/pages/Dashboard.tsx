@@ -83,6 +83,7 @@ export default function Dashboard() {
   // Pass dashboardPerson to all hooks (overrides shared context for Admin/Manager)
   const dp = isMgmt ? dashboardPerson : undefined;
   const { data: tasks } = useTaskQueue(7, 20, dp);
+  const { data: myTasks } = useTaskQueue(7, 10, user?.full_name);
   const { data: allLeads } = useDashboardLeads(500, dp);
   const { data: pipelineHealth } = usePipelineHealth(dp);
   const { data: execSummary } = useExecutiveSummary(dp);
@@ -97,6 +98,10 @@ export default function Dashboard() {
   const todayTasks = tasks?.today_capped || [];
   const overdueTasks = tasks?.overdue || [];
   const upcomingTasks = tasks?.upcoming || [];
+
+  const myOverdueTasks = myTasks?.overdue || [];
+  const myTodayTasks = myTasks?.today_capped || [];
+  const hasMyTasks = myOverdueTasks.length > 0 || myTodayTasks.length > 0;
 
   // ── Salesperson Dashboard ────────────────────────────────────────────
   if (isSalesperson) {
@@ -459,6 +464,39 @@ export default function Dashboard() {
               Clear
             </Button>
           </div>
+        )}
+      </div>
+
+      {/* My Tasks — personal tasks for Admin/Manager with assigned leads */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[15px] font-semibold flex items-center gap-2 text-foreground/90">
+            <ListTodo className="w-4 h-4 text-primary" />My Tasks
+            {hasMyTasks && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{myOverdueTasks.length + myTodayTasks.length}</span>}
+          </h2>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/tasks")} className="gap-1 text-[13px]">View all <ArrowRight className="w-3.5 h-3.5" /></Button>
+        </div>
+        {hasMyTasks ? (
+          <div className="space-y-2 mb-6">
+            {[...myOverdueTasks.slice(0, 3), ...myTodayTasks.slice(0, 5 - Math.min(myOverdueTasks.length, 3))].map((task: any) => {
+              const isLate = task.days_to < 0;
+              const isDue = task.days_to === 0;
+              return (
+                <div key={`my-${task.lead_id}-${task.followup_id || "t"}`} onClick={() => navigate(`/leads/${task.lead_id}`)} className={cn("group flex items-center gap-3.5 p-3.5 rounded-[14px] border bg-card cursor-pointer transition-all duration-150", isLate ? "border-red-200/60 hover:border-red-300/60 hover:shadow-sm" : "border-border/60 hover:border-primary/20 hover:shadow-sm")}>
+                  <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", isLate ? "bg-destructive" : isDue ? "bg-accent" : "bg-primary/40")} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[14px] truncate">{task.company_name}</p>
+                    <p className="text-[12px] mt-0.5 text-muted-foreground/60 line-clamp-1">{task.next_action_plan || task.recommended_action}</p>
+                  </div>
+                  <span className={cn("text-[12px] font-semibold px-2 py-0.5 rounded-md shrink-0", isLate ? "bg-red-50 text-destructive" : isDue ? "bg-amber-50 text-accent" : "bg-muted text-muted-foreground/60")}>
+                    {isLate ? `${Math.abs(task.days_to)}d overdue` : isDue ? "Today" : `in ${task.days_to}d`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="border-border/60 mb-6"><CardContent className="py-6 text-center"><CheckCircle2 className="w-6 h-6 text-emerald-400/50 mx-auto mb-1.5" /><p className="text-sm text-muted-foreground/70 font-medium">No pending tasks — all caught up!</p></CardContent></Card>
         )}
       </div>
 

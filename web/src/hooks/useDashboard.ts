@@ -78,26 +78,16 @@ export function useDashboardLeads(limit = 500, salespersonOverride?: string | nu
 }
 
 export function useTaskQueue(upcomingDays = 7, maxToday = 20, salespersonOverride?: string | null) {
+  const s = resolve(salespersonOverride);
   const query = useQuery<TaskQueue>({
-    queryKey: ["tasks", upcomingDays, maxToday],
-    queryFn: () => api.get(`/followups/tasks?upcoming_days=${upcomingDays}&max_today=${maxToday}`).then((r) => r.data),
+    queryKey: ["tasks", upcomingDays, maxToday, s],
+    queryFn: () => api.get("/followups/tasks", {
+      params: { upcoming_days: upcomingDays, max_today: maxToday, ...(s ? { salesperson: s } : {}) },
+    }).then((r) => r.data),
     ...STALE,
   });
 
-  const filter = salespersonOverride;
-  const data = useMemo(() => {
-    if (!filter || !query.data) return query.data;
-    const match = (t: any) => t.assigned_to?.toLowerCase() === filter.toLowerCase();
-    return {
-      ...query.data,
-      today_capped: query.data.today_capped.filter(match),
-      overdue: query.data.overdue.filter(match),
-      upcoming: query.data.upcoming.filter(match),
-      completed: query.data.completed.filter(match),
-    };
-  }, [query.data, filter]);
-
-  return { ...query, data };
+  return query;
 }
 
 export function usePipelineHealth(salespersonOverride?: string | null) {

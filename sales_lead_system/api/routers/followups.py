@@ -5,13 +5,14 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from api.deps import get_current_user, get_db
 from api.schemas import (ActivityWizardRequest, ActivityWizardResponse, FollowUpComplete,
                          FollowUpCompleteResponse, FollowUpCreate, FollowUpResponse, TaskQueue)
 from database.crud import FollowUpCRUD
-from database.models import ActivityLog, FollowUp, Lead
+from database.models import ActivityLog, FollowUp, Lead, User
 from modules import activity_engine, task_engine
 
 router = APIRouter()
@@ -63,14 +64,45 @@ def _check_followup_access(fu: FollowUp, user: dict, db: Session) -> None:
 def task_queue(
     upcoming_days: int = Query(7, ge=1, le=30),
     max_today: int = Query(20, ge=1, le=50),
+    salesperson: str | None = Query(None, description="Filter tasks by salesperson full_name"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    target = _resolve_target_user(current_user, salesperson, db)
     result = task_engine.generate_tasks(
-        db, current_user, today=None,
+        db, target, today=None,
         upcoming_days=upcoming_days, max_today=max_today,
     )
     return TaskQueue(**result)
+
+
+def _resolve_target_user(current_user: dict, salesperson: str | None, db: Session) -> dict:
+    """Resolve the target user for task scoping.
+
+    - No *salesperson* -> returns current_user (Admin sees all, Salesperson sees own).
+    - Admin/Manager can specify any active user by full_name to see their tasks.
+    - Salesperson always sees their own data (ignores param).
+    - Explicitly named targets are always scoped (role forced to Salesperson)
+      so that Admins/Managers with assigned leads get a filtered view.
+    """
+    if not salesperson:
+        return current_user
+
+    role = current_user.get("role", "")
+    if role == "Salesperson":
+        return current_user
+
+    user = db.scalar(
+        select(User).where(
+            User.full_name == salesperson,
+            User.is_active.is_(True),
+            User.deleted_at.is_(None),
+        )
+    )
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User '{salesperson}' not found")
+    # Force role to Salesperson so _scope() filters by assigned_to
+    return {"username": user.username, "full_name": user.full_name, "role": "Salesperson"}
 
 
 @router.post("", response_model=FollowUpResponse, status_code=status.HTTP_201_CREATED)
