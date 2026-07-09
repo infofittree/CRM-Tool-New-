@@ -9,7 +9,7 @@ import api, { type Task } from "@/lib/api";
 import TaskWorkflowModal from "@/components/TaskWorkflowModal";
 import { getTaskTypeConfig } from "@/lib/taskTypes";
 import {
-  Clock, AlertTriangle, Calendar, ArrowRight, CheckCircle2, Building2,
+  Clock, AlertTriangle, Calendar, ArrowRight, CheckCircle2, Building2, Users, User,
 } from "lucide-react";
 
 type TabKey = "all" | "calls" | "responses" | "procurement" | "meetings" | "quotations";
@@ -24,7 +24,21 @@ export default function Tasks() {
   const [selectedTab, setSelectedTab] = useState<TabKey>("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { data, isLoading } = useTaskQueue();
+  const isMgmt = user?.role === "Admin" || user?.role === "Manager";
+
+  // ── Salesperson filter for Admin/Manager (defaults to own tasks) ──
+  const [taskPerson, setTaskPerson] = useState<string | null>(null);
+  const [taskPeople, setTaskPeople] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isMgmt) return;
+    api.get("/users/salespersons").then((r) => setTaskPeople(r.data || [])).catch(() => {});
+  }, [isMgmt]);
+
+  // Default to current user's own tasks for Admin/Manager
+  const effectivePerson = isMgmt ? (taskPerson ?? user?.full_name ?? null) : undefined;
+
+  const { data, isLoading } = useTaskQueue(7, 50, effectivePerson);
   const { data: leadsData } = useQuery({
     queryKey: ["tasks", "my-leads", user?.full_name],
     queryFn: () => api.get("/leads", { params: { assigned_to: user?.full_name, page_size: 1 } }).then((r) => r.data.total || 0),
@@ -77,6 +91,37 @@ export default function Tasks() {
 
   return (
     <div className="p-5 lg:p-7 space-y-5 max-w-[1400px] mx-auto">
+      {/* Person filter for Admin/Manager */}
+      {isMgmt && (
+        <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-border/60 bg-card">
+          <div className="flex items-center gap-2.5">
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-[13px] font-medium text-foreground/80">Viewing Tasks For</span>
+          </div>
+          <select
+            value={taskPerson || ""}
+            onChange={(e) => setTaskPerson(e.target.value || null)}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[180px]"
+          >
+            <option value="">My Tasks</option>
+            {taskPeople.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+          {taskPerson && (
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/[0.06] border border-primary/20">
+                <User className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[12px] font-semibold text-primary">{taskPerson}</span>
+              </div>
+              <button className="text-xs text-muted-foreground hover:text-foreground px-2 py-1" onClick={() => setTaskPerson(null)}>
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summaryCards.map((s) => (
           <div key={s.label} className={cn("rounded-2xl border p-5 transition-all duration-200 hover-lift", s.bg, s.border)}>
