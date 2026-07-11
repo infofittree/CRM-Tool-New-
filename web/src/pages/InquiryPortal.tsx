@@ -105,7 +105,7 @@ export default function InquiryPortal() {
             {statusFilter ? ` · ${DISPLAY_STATUS_LABELS[statusFilter] || statusFilter.replace(/_/g, " ")}` : ""}
           </p>
         </div>
-        {!isProc && (
+        {user?.role !== "Procurement" && (
           <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" />New Inquiry
           </Button>
