@@ -418,8 +418,8 @@ class LeadProduct(Base):
         Index("ix_lead_products_product_id", "product_id"),
     )
 
-    lead_id: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), primary_key=True)
-    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"), primary_key=True)
+    lead_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
 
 class InquiryRevision(Base):
