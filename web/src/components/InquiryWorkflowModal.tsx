@@ -303,28 +303,16 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
 
               {/* Revision form */}
               <div className="space-y-4">
-                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider">New Revision Request</p>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Reason *</label>
-                  <select value={revisionReason} onChange={(e) => setRevisionReason(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="">Select a reason...</option>
-                    {REVISION_REASONS.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Customer Feedback *</label>
+                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">What did the customer say? *</label>
                   <textarea value={revisionFeedback} onChange={(e) => setRevisionFeedback(e.target.value)} rows={4}
-                    placeholder="What did the customer say? Why do they need changes?" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                    placeholder="Customer feedback, concerns, or requests..." className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Target Price</label><input type="text" value={revisionTargetPrice} onChange={(e) => setRevisionTargetPrice(e.target.value)} placeholder="e.g. ₹205/kg" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Quantity</label><input type="text" value={revisionQuantity} onChange={(e) => setRevisionQuantity(e.target.value)} placeholder="e.g. 500 kg" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Packaging</label><input type="text" value={revisionPackaging} onChange={(e) => setRevisionPackaging(e.target.value)} placeholder="e.g. 25kg bags" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Delivery Timeline</label><input type="text" value={revisionDelivery} onChange={(e) => setRevisionDelivery(e.target.value)} placeholder="e.g. 2 weeks" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Payment Terms</label><input type="text" value={revisionPayment} onChange={(e) => setRevisionPayment(e.target.value)} placeholder="e.g. 50% advance" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">What do you need from procurement? *</label>
+                  <textarea value={revisionAdditional} onChange={(e) => setRevisionAdditional(e.target.value)} rows={4}
+                    placeholder="What changes or information does procurement need to provide?" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
                 </div>
-                <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Additional Requirements</label><textarea value={revisionAdditional} onChange={(e) => setRevisionAdditional(e.target.value)} rows={2} placeholder="Any other changes..." className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" /></div>
               </div>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -333,7 +321,7 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
             {/* Revision Footer */}
             <div className="shrink-0 px-6 py-4 border-t border-border/40 rounded-b-2xl">
               <div className="flex items-center gap-3">
-                <Button onClick={handleRequestRevision} disabled={submitting || !revisionReason || !revisionFeedback.trim()} className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-[12px]">
+                <Button onClick={handleRequestRevision} disabled={submitting || !revisionFeedback.trim() || !revisionAdditional.trim()} className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-[12px]">
                   {submitting ? "Sending..." : <><MessageSquare className="w-4 h-4" />Send Revision Request</>}
                 </Button>
                 <Button variant="outline" onClick={() => transition("details")} className="rounded-[12px]">Cancel</Button>
