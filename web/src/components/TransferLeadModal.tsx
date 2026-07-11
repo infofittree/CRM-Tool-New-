@@ -36,9 +36,9 @@ export default function TransferLeadModal({ lead, onClose }: TransferLeadModalPr
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get("/users").then((r) => {
+    api.get("/users/transfer-recipients").then((r) => {
       const me = user?.full_name?.toLowerCase();
-      setTeammates(r.data.filter((u: any) => u.role !== "Procurement" && u.full_name.toLowerCase() !== me && u.is_active !== false));
+      setTeammates(r.data.filter((u: any) => u.full_name.toLowerCase() !== me));
     }).catch(() => {});
   }, [user]);
 

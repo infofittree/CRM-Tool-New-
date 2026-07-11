@@ -23,6 +23,16 @@ def list_users(
     return [UserResponse(username=u.username, full_name=u.full_name, role=u.role, phone=u.phone) for u in users]
 
 
+@router.get("/transfer-recipients", response_model=list[UserResponse])
+def transfer_recipients(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return all active users eligible to receive a lead transfer."""
+    users = db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.full_name)).all()
+    return [UserResponse(username=u.username, full_name=u.full_name, role=u.role, phone=u.phone) for u in users]
+
+
 @router.get("/salespersons", response_model=list[str])
 def salespersons(
     current_user: dict = Depends(require_role(["Admin", "Manager"])),
