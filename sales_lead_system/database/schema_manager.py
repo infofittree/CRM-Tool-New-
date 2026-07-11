@@ -16,6 +16,9 @@ from sqlalchemy.engine import Engine
 def _is_mysql(engine: Engine) -> bool:
     return engine.dialect.name == "mysql"
 
+def _is_postgres(engine: Engine) -> bool:
+    return engine.dialect.name == "postgresql"
+
 
 def _needed_columns(engine: Engine, table: str) -> set[str]:
     if table not in set(inspect(engine).get_table_names()):
@@ -517,30 +520,50 @@ def ensure_phase11_schema(engine: Engine) -> None:
     """Create products and lead_products tables."""
     from sqlalchemy import text as sa_text
     existing = set(inspect(engine).get_table_names())
+    is_pg = _is_postgres(engine)
 
     if "products" not in existing:
         with engine.connect() as conn:
-            conn.execute(sa_text("""
-                CREATE TABLE products (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name VARCHAR(100) NOT NULL UNIQUE,
-                    category VARCHAR(50) NOT NULL,
-                    is_active BOOLEAN NOT NULL DEFAULT 1
-                )
-            """))
+            if is_pg:
+                conn.execute(sa_text("""
+                    CREATE TABLE products (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL UNIQUE,
+                        category VARCHAR(50) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE
+                    )
+                """))
+            else:
+                conn.execute(sa_text("""
+                    CREATE TABLE products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name VARCHAR(100) NOT NULL UNIQUE,
+                        category VARCHAR(50) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT 1
+                    )
+                """))
             for name, category in PRODUCT_SEED_DATA:
-                conn.execute(sa_text(f"INSERT INTO products (name, category) VALUES ('{name}', '{category}')"))
+                conn.execute(sa_text("INSERT INTO products (name, category) VALUES (:name, :category)"), {"name": name, "category": category})
             conn.commit()
 
     if "lead_products" not in existing:
         with engine.connect() as conn:
-            conn.execute(sa_text("""
-                CREATE TABLE lead_products (
-                    lead_id VARCHAR(32) NOT NULL,
-                    product_id INTEGER NOT NULL,
-                    PRIMARY KEY (lead_id, product_id)
-                )
-            """))
+            if is_pg:
+                conn.execute(sa_text("""
+                    CREATE TABLE lead_products (
+                        lead_id VARCHAR(32) NOT NULL,
+                        product_id INTEGER NOT NULL,
+                        PRIMARY KEY (lead_id, product_id)
+                    )
+                """))
+            else:
+                conn.execute(sa_text("""
+                    CREATE TABLE lead_products (
+                        lead_id VARCHAR(32) NOT NULL,
+                        product_id INTEGER NOT NULL,
+                        PRIMARY KEY (lead_id, product_id)
+                    )
+                """))
             conn.execute(sa_text("CREATE INDEX ix_lead_products_lead_id ON lead_products (lead_id)"))
             conn.execute(sa_text("CREATE INDEX ix_lead_products_product_id ON lead_products (product_id)"))
             conn.commit()
