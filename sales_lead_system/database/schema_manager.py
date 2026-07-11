@@ -466,3 +466,31 @@ def ensure_phase8_schema(engine: Engine) -> None:
     _add_missing_columns(engine, "leads", PHASE8_LEAD_COLUMNS)
     if "followups" in set(inspect(engine).get_table_names()):
         _add_missing_columns(engine, "followups", PHASE8_FOLLOWUP_COLUMNS)
+
+
+def ensure_phase10_schema(engine: Engine) -> None:
+    """Create lead_handovers table for the Lead Transfer (Handover) system."""
+    from sqlalchemy import text as sa_text
+    existing = set(inspect(engine).get_table_names())
+    if "lead_handovers" in existing:
+        return
+    with engine.connect() as conn:
+        conn.execute(sa_text("""
+            CREATE TABLE lead_handovers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lead_id VARCHAR(32) NOT NULL,
+                from_user VARCHAR(100) NOT NULL,
+                to_user VARCHAR(100) NOT NULL,
+                reason VARCHAR(50) NOT NULL,
+                notes TEXT,
+                status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                responded_at DATETIME,
+                responded_by VARCHAR(100),
+                created_by VARCHAR(100) NOT NULL
+            )
+        """))
+        conn.execute(sa_text("CREATE INDEX ix_lead_handovers_lead_id ON lead_handovers (lead_id)"))
+        conn.execute(sa_text("CREATE INDEX ix_lead_handovers_to_user ON lead_handovers (to_user)"))
+        conn.execute(sa_text("CREATE INDEX ix_lead_handovers_status ON lead_handovers (status)"))
+        conn.commit()

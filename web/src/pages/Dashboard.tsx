@@ -4,17 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import api from "@/lib/api";
+import api, { fetchMyPendingHandovers, type LeadHandover } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import {
   useTaskQueue, usePipelineHealth, useDashboardLeads,
 } from "@/hooks/useDashboard";
 import { useExecutiveSummary, useProductivity } from "@/hooks/useAnalytics";
 import { fetchInquirySummary, type InquirySummary } from "@/lib/inquiries";
+import HandoverResponseModal from "@/components/HandoverResponseModal";
 import {
   TrendingUp, Users, Sparkles, BarChart3, ListTodo,
   ArrowRight, Target, CheckCircle2, AlertTriangle, Clock, Timer,
   MessageSquare, AlertCircle, Inbox, CircleDot, Flame, Eye, User,
+  ArrowRightLeft, Package,
 } from "lucide-react";
 
 function getGreeting() {
@@ -69,6 +71,8 @@ export default function Dashboard() {
   // ── Dashboard-specific salesperson filter (independent from Analytics) ──
   const [dashboardPerson, setDashboardPerson] = useState<string | null>(null);
   const [dashboardPeople, setDashboardPeople] = useState<string[]>([]);
+  const [pendingHandovers, setPendingHandovers] = useState<LeadHandover[]>([]);
+  const [respondingHandover, setRespondingHandover] = useState<LeadHandover | null>(null);
 
   useEffect(() => {
     if (!isMgmt) return;
@@ -79,6 +83,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isMgmt) setDashboardPerson(null);
   }, [isMgmt]);
+
+  // Fetch pending handovers for all roles (they may receive transfers)
+  useEffect(() => {
+    fetchMyPendingHandovers().then(setPendingHandovers).catch(() => {});
+  }, []);
 
   // Pass dashboardPerson to all hooks (overrides shared context for Admin/Manager)
   const dp = isMgmt ? dashboardPerson : undefined;
@@ -149,6 +158,40 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Pending Lead Transfers */}
+        {pendingHandovers.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-amber-700">
+                <ArrowRightLeft className="w-4 h-4" />Pending Lead Transfers ({pendingHandovers.length})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {pendingHandovers.map((h) => (
+                <div key={h.id} onClick={() => setRespondingHandover(h)}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-white/70 border border-amber-200/50 cursor-pointer hover:border-amber-300 transition-all">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <ArrowRightLeft className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{h.from_user} wants to transfer a lead to you</p>
+                    <p className="text-[11px] text-muted-foreground/60">Reason: {h.reason.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="shrink-0 text-xs">Review</Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Handover Response Modal */}
+        {respondingHandover && (
+          <HandoverResponseModal handover={respondingHandover} onClose={() => {
+            setRespondingHandover(null);
+            fetchMyPendingHandovers().then(setPendingHandovers).catch(() => {});
+          }} />
+        )}
 
         {/* Priorities + Pipeline */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

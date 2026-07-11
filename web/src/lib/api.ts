@@ -368,4 +368,52 @@ export async function completeActivity(followupId: number, data: ActivityWizardR
   return res.data;
 }
 
+// ── Lead Handover ────────────────────────────────────────────────────────────
+
+export interface LeadHandover {
+  id: number;
+  lead_id: string;
+  from_user: string;
+  to_user: string;
+  reason: string;
+  notes: string | null;
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+  requested_at: string;
+  responded_at: string | null;
+  responded_by: string | null;
+  created_by: string;
+  company_name: string | null;
+}
+
+export interface HandoverCreate {
+  to_user: string;
+  reason: string;
+  notes?: string;
+}
+
+export async function createHandover(leadId: string, data: HandoverCreate): Promise<LeadHandover> {
+  const res = await api.post(`/leads/${leadId}/handover`, data);
+  return res.data;
+}
+
+export async function acceptHandover(handoverId: number): Promise<LeadHandover> {
+  const res = await api.post(`/handovers/${handoverId}/accept`);
+  return res.data;
+}
+
+export async function declineHandover(handoverId: number): Promise<LeadHandover> {
+  const res = await api.post(`/handovers/${handoverId}/decline`);
+  return res.data;
+}
+
+export async function fetchLeadHandovers(leadId: string): Promise<LeadHandover[]> {
+  const res = await api.get(`/leads/${leadId}/handovers`);
+  return res.data;
+}
+
+export async function fetchMyPendingHandovers(): Promise<LeadHandover[]> {
+  const res = await api.get("/me/handovers");
+  return res.data;
+}
+
 export default api;

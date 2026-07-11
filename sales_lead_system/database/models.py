@@ -331,6 +331,29 @@ class LeadTransfer(Base):
     transferred_by: Mapped[str | None] = mapped_column(String(100))
 
 
+class LeadHandover(Base):
+    """Pending lead transfer requests with accept/decline workflow."""
+
+    __tablename__ = "lead_handovers"
+    __table_args__ = (
+        Index("ix_lead_handovers_lead_id", "lead_id"),
+        Index("ix_lead_handovers_to_user", "to_user"),
+        Index("ix_lead_handovers_status", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    from_user: Mapped[str] = mapped_column(String(100), nullable=False)
+    to_user: Mapped[str] = mapped_column(String(100), nullable=False)
+    reason: Mapped[str] = mapped_column(String(50), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="PENDING")
+    requested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime)
+    responded_by: Mapped[str | None] = mapped_column(String(100))
+    created_by: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
 class ErrorLog(Base):
     """Captured runtime errors (Phase 7) — no silent failures."""
 

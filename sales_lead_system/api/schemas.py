@@ -430,3 +430,35 @@ class PaginatedResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# ── Lead Handover ─────────────────────────────────────────────────────────────
+
+HANDOVER_REASONS = ("product_expertise", "language", "region", "customer_request", "workload", "leave", "manager_decision", "other")
+
+class HandoverCreate(BaseModel):
+    to_user: str
+    reason: str
+    notes: str | None = None
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        if v not in HANDOVER_REASONS:
+            raise ValueError(f"Reason must be one of: {', '.join(HANDOVER_REASONS)}")
+        return v
+
+
+class HandoverResponse(BaseModel):
+    id: int
+    lead_id: str
+    from_user: str
+    to_user: str
+    reason: str
+    notes: str | None = None
+    status: str
+    requested_at: datetime
+    responded_at: datetime | None = None
+    responded_by: str | None = None
+    created_by: str
+    company_name: str | None = None

@@ -15,8 +15,9 @@ import {
 import {
   ArrowLeft, Phone, Mail, Globe, MapPin, Building2,
   User, Briefcase, Calendar, Target, FileText,
-  MessageSquare, Clock, ChevronRight, Plus, X, AlertTriangle, Activity, Pencil,
+  MessageSquare, Clock, ChevronRight, Plus, X, AlertTriangle, Activity, Pencil, ArrowRightLeft,
 } from "lucide-react";
+import TransferLeadModal from "@/components/TransferLeadModal";
 
 const PRIORITY_BADGES: Record<string, string> = {
   HIGH: "bg-red-50 text-red-700 border-red-200",
@@ -49,6 +50,7 @@ export default function LeadDetail() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<InquiryCreate>({
@@ -163,6 +165,11 @@ export default function LeadDetail() {
           }}>
             <Pencil className="w-3.5 h-3.5" /> Edit
           </Button>
+          {user?.role !== "Procurement" && (
+            <Button variant="outline" size="sm" onClick={() => setShowTransfer(true)} className="gap-1.5">
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Transfer
+            </Button>
+          )}
           <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-md", band.color === "text-band-hot" ? "bg-red-50 text-red-700" : band.color === "text-band-warm" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700")}>
             {band.label}
           </span>
@@ -652,6 +659,11 @@ export default function LeadDetail() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Transfer Lead Modal */}
+      {showTransfer && lead && (
+        <TransferLeadModal lead={lead} onClose={() => setShowTransfer(false)} />
       )}
     </div>
   );
