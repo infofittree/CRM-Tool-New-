@@ -573,7 +573,7 @@ def ensure_phase11_schema(engine: Engine) -> None:
         count = conn.execute(sa_text("SELECT COUNT(*) FROM products")).scalar()
         if count == 0:
             for name, category in PRODUCT_SEED_DATA:
-                conn.execute(sa_text("INSERT INTO products (name, category) VALUES (:name, :category)"), {"name": name, "category": category})
+                conn.execute(sa_text("INSERT INTO products (name, category, is_active) VALUES (:name, :category, TRUE)"), {"name": name, "category": category})
             conn.commit()
 
 
