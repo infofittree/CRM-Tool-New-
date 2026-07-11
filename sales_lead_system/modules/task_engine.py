@@ -140,8 +140,13 @@ def generate_tasks(
     upcoming: list[dict] = []
     completed_tasks: list[dict] = []
 
+    # Build lead lookup for the completed follow-up query
+    leads_by_id: dict[str, dict] = {}
+
     for row in lead_rows:
         lead = dict(row._mapping)
+        lid = lead.get("lead_id")
+        leads_by_id[lid] = lead
         canonical = to_canonical(lead.get("status"))
         if not is_open(canonical):
             continue
@@ -261,6 +266,67 @@ def generate_tasks(
     # Sort each bucket: higher priority_score first
     for bucket in (overdue, today_tasks, upcoming):
         bucket.sort(key=_priority_score, reverse=True)
+
+    # ── Recently completed follow-ups that are NOT the latest ────────────
+    # When the Activity Wizard completes follow-up N and creates N+1,
+    # the main loop above sees N+1 as the latest (active). But follow-up N
+    # was just completed and should appear in the completed bucket.
+    # We query for completed follow-ups within 7 days that are not the latest.
+    recent_completes = (
+        select(
+            FollowUp.lead_id,
+            FollowUp.followup_id,
+            FollowUp.completed_at,
+            FollowUp.completed_by,
+            FollowUp.outcome_notes,
+            FollowUp.discussion,
+            FollowUp.next_action,
+        )
+        .join(latest_fu, FollowUp.lead_id == latest_fu.c.lead_id)
+        .where(
+            FollowUp.completed_at.isnot(None),
+            FollowUp.followup_id < latest_fu.c.max_id,  # NOT the latest
+            FollowUp.completed_at >= today - timedelta(days=7),
+        )
+    )
+    for lid, fid, ca, cb, notes, disc, na in session.execute(recent_completes):
+        # Skip if already in completed_tasks (from the main loop)
+        if any(t.get("followup_id") == fid for t in completed_tasks):
+            continue
+        # Look up the lead for basic info
+        lead_info = leads_by_id.get(lid)
+        if lead_info is None:
+            continue
+        completed_tasks.append({
+            "lead_id": lid,
+            "company_name": lead_info.get("company_name"),
+            "assigned_to": lead_info.get("assigned_to"),
+            "status": lead_info.get("status"),
+            "standard_status": to_canonical(lead_info.get("status")),
+            "score": score_lead(lead_info)[0],
+            "band": score_lead(lead_info)[1],
+            "band_emoji": band_emoji(score_lead(lead_info)[1]),
+            "lead_category": lead_info.get("lead_category") or "C",
+            "recommended_action": "Completed",
+            "reason": None,
+            "next_action_plan": None,
+            "due_date": None,
+            "due_label": "Completed",
+            "days_to": 0,
+            "last_contact_date": _as_date(lead_info.get("last_contact_date")),
+            "phone": lead_info.get("phone"),
+            "email": lead_info.get("email"),
+            "interest_level": lead_info.get("interest_level"),
+            "potential_deal_value": lead_info.get("potential_deal_value"),
+            "customer_requirements": lead_info.get("customer_requirements"),
+            "followup_id": fid,
+            "discussion": disc or "",
+            "next_action": na or "",
+            "outcome_notes": notes,
+            "completed_at": ca.isoformat() if isinstance(ca, datetime) else str(ca),
+            "completed_by": cb,
+            "bucket": "completed",
+        })
 
     actionable = overdue + today_tasks
     actionable.sort(key=_priority_score, reverse=True)
