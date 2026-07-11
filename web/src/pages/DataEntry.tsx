@@ -26,6 +26,7 @@ const defaultForm = {
 const LEAD_CATEGORIES = ["A", "B", "C"];
 const LEAD_SOURCES = ["Website", "Referral", "Alibaba", "Trade Show", "LinkedIn", "Cold Call", "Email Campaign", "WhatsApp", "Other"];
 const FOLLOWUP_MODES = ["call", "email", "whatsapp", "meeting"];
+const COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Czech Republic","Denmark","Egypt","Ethiopia","Finland","France","Germany","Ghana","Greece","Hungary","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Japan","Jordan","Kenya","Korea","Kuwait","Lebanon","Libya","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia","Turkey","UAE","Uganda","Ukraine","United Kingdom","United States","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe"];
 
 export default function DataEntry() {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ export default function DataEntry() {
   const [form, setForm] = useState({ ...defaultForm, next_follow_up: defaultFollowupDate });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -90,7 +93,28 @@ export default function DataEntry() {
               <FormField label="Contact Person *" value={form.contact_person} onChange={(v) => handleChange("contact_person", v)} placeholder="Full name (required)" />
               <FormField label="Phone" value={form.phone} onChange={(v) => handleChange("phone", v)} placeholder="+1 234 567 890" />
               <FormField label="Email" value={form.email} onChange={(v) => handleChange("email", v)} placeholder="contact@company.com" />
-              <FormField label="Country" value={form.country} onChange={(v) => handleChange("country", v)} placeholder="e.g. United States" />
+              <div className="relative">
+                <label className="text-sm font-medium text-foreground block mb-1.5">Country</label>
+                <input
+                  type="text"
+                  value={form.country}
+                  onChange={(e) => { handleChange("country", e.target.value); setCountrySearch(e.target.value); setCountryOpen(true); }}
+                  onFocus={() => setCountryOpen(true)}
+                  onBlur={() => setTimeout(() => setCountryOpen(false), 200)}
+                  placeholder="Type to search countries..."
+                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+                />
+                {countryOpen && form.country && (
+                  <div className="absolute z-50 mt-1 w-full max-h-[160px] overflow-y-auto rounded-lg border border-border/60 bg-white shadow-lg">
+                    {COUNTRIES.filter((c) => c.toLowerCase().includes(form.country.toLowerCase())).length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">No matching countries</div>
+                    ) : COUNTRIES.filter((c) => c.toLowerCase().includes(form.country.toLowerCase())).slice(0, 10).map((c) => (
+                      <button key={c} type="button" onMouseDown={() => { handleChange("country", c); setCountryOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted/40 transition-colors">{c}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1.5">Lead Source *</label>
                 <select
