@@ -544,3 +544,36 @@ def ensure_phase11_schema(engine: Engine) -> None:
             conn.execute(sa_text("CREATE INDEX ix_lead_products_lead_id ON lead_products (lead_id)"))
             conn.execute(sa_text("CREATE INDEX ix_lead_products_product_id ON lead_products (product_id)"))
             conn.commit()
+
+
+# ── Phase 12: Inquiry Revisions ─────────────────────────────────────────────
+
+def ensure_phase12_schema(engine: Engine) -> None:
+    """Create inquiry_revisions table for negotiation tracking."""
+    from sqlalchemy import text as sa_text
+    existing = set(inspect(engine).get_table_names())
+    if "inquiry_revisions" in existing:
+        return
+    with engine.connect() as conn:
+        conn.execute(sa_text("""
+            CREATE TABLE inquiry_revisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                inquiry_id INTEGER NOT NULL,
+                revision_number INTEGER NOT NULL,
+                created_by VARCHAR(100) NOT NULL,
+                reason VARCHAR(50) NOT NULL,
+                customer_feedback TEXT,
+                target_price VARCHAR(50),
+                quantity VARCHAR(50),
+                packaging VARCHAR(50),
+                delivery_timeline VARCHAR(50),
+                payment_terms VARCHAR(50),
+                additional_requirements TEXT,
+                status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                responded_at DATETIME,
+                responded_by VARCHAR(100)
+            )
+        """))
+        conn.execute(sa_text("CREATE INDEX ix_inquiry_revisions_inquiry_id ON inquiry_revisions (inquiry_id)"))
+        conn.commit()

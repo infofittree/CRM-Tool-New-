@@ -9,8 +9,8 @@ from sqlalchemy import select, func, update as sql_update
 from sqlalchemy.orm import Session as DBSession
 
 from api.deps import get_current_user, get_db
-from api.schemas import CommitmentRequest, InquiryCreate, InquiryDetail, InquiryResponse, InquirySummary, InquiryUpdate
-from database.models import Inquiry, Lead, User
+from api.schemas import CommitmentRequest, InquiryCreate, InquiryDetail, InquiryResponse, InquirySummary, InquiryUpdate, RevisionCreate
+from database.models import Inquiry, Lead, User, InquiryRevision
 from database.models import INQUIRY_COMMITMENT_TYPES
 
 router = APIRouter(tags=["inquiries"])
@@ -279,3 +279,148 @@ def check_overdue_inquiries(
 
     db.commit()
     return {"updated": updated}
+
+
+# ── Revision / Negotiation endpoints ────────────────────────────────────────
+
+@router.post("/inquiries/{inquiry_id}/revision", response_model=dict, status_code=status.HTTP_201_CREATED)
+def request_revision(inquiry_id: int, body: RevisionCreate, user: dict = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    """Sales/Manager/Admin requests a revision on a procurement response."""
+    inquiry = db.get(Inquiry, inquiry_id)
+    if not inquiry:
+        raise HTTPException(404, "Inquiry not found")
+
+    # Permission check
+    role = user["role"]
+    user_name = user["full_name"]
+    if role == "Salesperson" and inquiry.created_by != user_name:
+        raise HTTPException(403, "You can only request revisions for inquiries you created")
+    if role not in ("Admin", "Manager", "Salesperson"):
+        raise HTTPException(403, "You do not have permission to request revisions")
+
+    # Must have a response to revise
+    if not inquiry.response:
+        raise HTTPException(400, "Procurement has not responded yet — nothing to revise")
+    if inquiry.status in ("CLOSED",):
+        raise HTTPException(400, "Cannot request revision on a closed inquiry")
+
+    # Determine revision number
+    latest_rev = db.execute(
+        select(func.max(InquiryRevision.revision_number)).where(InquiryRevision.inquiry_id == inquiry_id)
+    ).scalar() or 0
+    rev_number = latest_rev + 1
+
+    revision = InquiryRevision(
+        inquiry_id=inquiry_id,
+        revision_number=rev_number,
+        created_by=user_name,
+        reason=body.reason,
+        customer_feedback=body.customer_feedback,
+        target_price=body.target_price,
+        quantity=body.quantity,
+        packaging=body.packaging,
+        delivery_timeline=body.delivery_timeline,
+        payment_terms=body.payment_terms,
+        additional_requirements=body.additional_requirements,
+        status="PENDING",
+    )
+    db.add(revision)
+
+    # Update inquiry status
+    inquiry.status = "REVISION_REQUESTED"
+    inquiry.updated_at = datetime.now(timezone.utc)
+
+    # Create alert for procurement
+    from database.models import CrmAlert
+    alert = CrmAlert(
+        lead_id=inquiry.lead_id,
+        alert_type="revision_requested",
+        message=f"Revision requested on \"{inquiry.title}\" by {user_name} — Reason: {body.reason.replace('_', ' ').title()}",
+        assigned_to=inquiry.assigned_to,
+    )
+    db.add(alert)
+
+    # Log activity
+    from database.models import ActivityLog
+    log = ActivityLog(action="REVISION_REQUESTED", user_name=user_name, lead_id=inquiry.lead_id, remarks=f"Revision #{rev_number} on inquiry {inquiry_id}: {body.reason}")
+    db.add(log)
+
+    db.commit()
+    db.refresh(revision)
+    return {
+        "id": revision.id, "inquiry_id": revision.inquiry_id, "revision_number": revision.revision_number,
+        "created_by": revision.created_by, "reason": revision.reason, "status": revision.status,
+        "created_at": revision.created_at.isoformat(),
+    }
+
+
+@router.get("/inquiries/{inquiry_id}/revisions")
+def list_revisions(inquiry_id: int, user: dict = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    """Get all revision rounds for an inquiry."""
+    inquiry = db.get(Inquiry, inquiry_id)
+    if not inquiry:
+        raise HTTPException(404, "Inquiry not found")
+    revisions = db.scalars(
+        select(InquiryRevision).where(InquiryRevision.inquiry_id == inquiry_id).order_by(InquiryRevision.revision_number)
+    ).all()
+    return [
+        {
+            "id": r.id, "inquiry_id": r.inquiry_id, "revision_number": r.revision_number,
+            "created_by": r.created_by, "reason": r.reason, "customer_feedback": r.customer_feedback,
+            "target_price": r.target_price, "quantity": r.quantity, "packaging": r.packaging,
+            "delivery_timeline": r.delivery_timeline, "payment_terms": r.payment_terms,
+            "additional_requirements": r.additional_requirements, "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "responded_at": r.responded_at.isoformat() if r.responded_at else None,
+            "responded_by": r.responded_by,
+        }
+        for r in revisions
+    ]
+
+
+@router.post("/inquiries/{inquiry_id}/revisions/{rev_id}/respond", response_model=dict)
+def respond_to_revision(inquiry_id: int, rev_id: int, body: dict, user: dict = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    """Procurement responds to a revision request."""
+    role = user["role"]
+    if role not in ("Admin", "Manager", "Procurement"):
+        raise HTTPException(403, "Only Procurement/Admin/Manager can respond to revisions")
+
+    revision = db.get(InquiryRevision, rev_id)
+    if not revision or revision.inquiry_id != inquiry_id:
+        raise HTTPException(404, "Revision not found")
+    if revision.status != "PENDING":
+        raise HTTPException(400, "This revision has already been responded to")
+
+    inquiry = db.get(Inquiry, inquiry_id)
+    if not inquiry:
+        raise HTTPException(404, "Inquiry not found")
+
+    now = datetime.now(timezone.utc)
+    revision.status = "RESPONDED"
+    revision.responded_at = now
+    revision.responded_by = user["full_name"]
+
+    # Update inquiry with revised response and status
+    if body.get("response"):
+        inquiry.response = body["response"]
+    inquiry.status = "REVISED_RESPONSE"
+    inquiry.responded_at = now
+    inquiry.updated_at = now
+
+    # Alert sales
+    from database.models import CrmAlert
+    alert = CrmAlert(
+        lead_id=inquiry.lead_id,
+        alert_type="revision_responded",
+        message=f"Revised quotation available for \"{inquiry.title}\" — Revision #{revision.revision_number}",
+        assigned_to=inquiry.created_by,
+    )
+    db.add(alert)
+
+    # Log activity
+    from database.models import ActivityLog
+    log = ActivityLog(action="REVISION_RESPONDED", user_name=user["full_name"], lead_id=inquiry.lead_id, remarks=f"Revision #{revision.revision_number} responded")
+    db.add(log)
+
+    db.commit()
+    return {"status": "ok", "revision_status": "RESPONDED", "inquiry_status": "REVISED_RESPONSE"}

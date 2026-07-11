@@ -9,13 +9,15 @@ import {
   fetchInquiries, updateInquiry, commitInquiry,
   type Inquiry, COMMITMENT_LABELS,
   DISPLAY_STATUS_LABELS, DISPLAY_STATUS_COLORS,
+  fetchInquiryRevisions, requestRevision, respondToRevision,
+  type InquiryRevision, REVISION_REASONS, REVISION_STATUS_LABELS,
 } from "@/lib/inquiries";
 import {
   X, CheckCircle2, Clock, Calendar, Timer, AlertTriangle,
   User, ArrowRight, Building2, Check, MessageSquare,
 } from "lucide-react";
 
-type ModalView = "details" | "action" | "success";
+type ModalView = "details" | "action" | "revision" | "success";
 
 interface InquiryWorkflowModalProps {
   inquiry: Inquiry;
@@ -39,6 +41,17 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
   const [commitDate, setCommitDate] = useState("");
   const [respondText, setRespondText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Revision state
+  const [revisions, setRevisions] = useState<InquiryRevision[]>([]);
+  const [revisionReason, setRevisionReason] = useState("");
+  const [revisionFeedback, setRevisionFeedback] = useState("");
+  const [revisionTargetPrice, setRevisionTargetPrice] = useState("");
+  const [revisionQuantity, setRevisionQuantity] = useState("");
+  const [revisionPackaging, setRevisionPackaging] = useState("");
+  const [revisionDelivery, setRevisionDelivery] = useState("");
+  const [revisionPayment, setRevisionPayment] = useState("");
+  const [revisionAdditional, setRevisionAdditional] = useState("");
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -90,6 +103,42 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
       const found = updated.find((i) => i.id === inquiry.id);
       if (found) setInquiry(found);
     } catch { /* ignore */ }
+  };
+
+  const loadRevisions = async () => {
+    try {
+      const revs = await fetchInquiryRevisions(inquiry.id);
+      setRevisions(revs);
+    } catch { /* ignore */ }
+  };
+
+  // Load revisions when opening revision view
+  useEffect(() => {
+    if (view === "revision") loadRevisions();
+  }, [view]);
+
+  const handleRequestRevision = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await requestRevision(inquiry.id, {
+        reason: revisionReason,
+        customer_feedback: revisionFeedback.trim() || undefined,
+        target_price: revisionTargetPrice.trim() || undefined,
+        quantity: revisionQuantity.trim() || undefined,
+        packaging: revisionPackaging.trim() || undefined,
+        delivery_timeline: revisionDelivery.trim() || undefined,
+        payment_terms: revisionPayment.trim() || undefined,
+        additional_requirements: revisionAdditional.trim() || undefined,
+      });
+      await refresh();
+      queryClient.invalidateQueries({ queryKey: ["inquiries"] });
+      transition("success");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to submit revision request");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ── Handlers ──
@@ -185,6 +234,11 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
                     <MessageSquare className="w-4 h-4" />Reply
                   </Button>
                 )}
+                {!isProc && inquiry.response && inquiry.status !== "CLOSED" && inquiry.status !== "REVISION_REQUESTED" && (
+                  <Button size="lg" className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-[12px]" onClick={() => transition("revision")}>
+                    <MessageSquare className="w-4 h-4" />Request Revision
+                  </Button>
+                )}
                 {isProc && !inquiry.response && inquiry.status !== "CLOSED" && (
                   <Button size="lg" className="flex-1 gap-2 bg-primary hover:bg-primary/90 rounded-[12px]" onClick={() => transition("action")}>
                     <CheckCircle2 className="w-4 h-4" />Respond
@@ -207,6 +261,83 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
               ) : (
                 <SalesReply respondText={respondText} setRespondText={setRespondText} onRespond={handleRespond} submitting={submitting} error={error} onBack={() => transition("details")} />
               )}
+            </div>
+          </>
+        )}
+
+        {/* ── View: Revision ── */}
+        {view === "revision" && (
+          <>
+            <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+              <button onClick={() => transition("details")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowRight className="w-4 h-4 rotate-180" />Back to inquiry
+              </button>
+
+              {/* Current response summary */}
+              {inquiry.response && (
+                <div className="rounded-[14px] bg-emerald-50/50 border border-emerald-200 p-4">
+                  <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mb-1">Current Procurement Response</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{inquiry.response}</p>
+                </div>
+              )}
+
+              {/* Negotiation history */}
+              {revisions.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-2">Negotiation History ({revisions.length} rounds)</p>
+                  <div className="space-y-2">
+                    {revisions.map((rev) => (
+                      <div key={rev.id} className={cn("rounded-lg border p-3 text-sm", rev.status === "PENDING" ? "border-amber-200 bg-amber-50/30" : "border-border/40")}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-xs">Revision #{rev.revision_number}</span>
+                          <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", rev.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")}>{REVISION_STATUS_LABELS[rev.status] || rev.status}</span>
+                          <span className="text-[11px] text-muted-foreground/50 ml-auto">{rev.created_by} · {new Date(rev.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-[12px] text-muted-foreground/70">{rev.reason.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
+                        {rev.customer_feedback && <p className="text-[12px] mt-1">{rev.customer_feedback}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Revision form */}
+              <div className="space-y-4">
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider">New Revision Request</p>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Reason *</label>
+                  <select value={revisionReason} onChange={(e) => setRevisionReason(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Select a reason...</option>
+                    {REVISION_REASONS.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Customer Feedback *</label>
+                  <textarea value={revisionFeedback} onChange={(e) => setRevisionFeedback(e.target.value)} rows={4}
+                    placeholder="What did the customer say? Why do they need changes?" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Target Price</label><input type="text" value={revisionTargetPrice} onChange={(e) => setRevisionTargetPrice(e.target.value)} placeholder="e.g. ₹205/kg" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Quantity</label><input type="text" value={revisionQuantity} onChange={(e) => setRevisionQuantity(e.target.value)} placeholder="e.g. 500 kg" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Packaging</label><input type="text" value={revisionPackaging} onChange={(e) => setRevisionPackaging(e.target.value)} placeholder="e.g. 25kg bags" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Delivery Timeline</label><input type="text" value={revisionDelivery} onChange={(e) => setRevisionDelivery(e.target.value)} placeholder="e.g. 2 weeks" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                  <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Payment Terms</label><input type="text" value={revisionPayment} onChange={(e) => setRevisionPayment(e.target.value)} placeholder="e.g. 50% advance" className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                </div>
+                <div><label className="text-xs font-medium text-muted-foreground/70 mb-1.5 block">Additional Requirements</label><textarea value={revisionAdditional} onChange={(e) => setRevisionAdditional(e.target.value)} rows={2} placeholder="Any other changes..." className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" /></div>
+              </div>
+
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+
+            {/* Revision Footer */}
+            <div className="shrink-0 px-6 py-4 border-t border-border/40 rounded-b-2xl">
+              <div className="flex items-center gap-3">
+                <Button onClick={handleRequestRevision} disabled={submitting || !revisionReason || !revisionFeedback.trim()} className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-[12px]">
+                  {submitting ? "Sending..." : <><MessageSquare className="w-4 h-4" />Send Revision Request</>}
+                </Button>
+                <Button variant="outline" onClick={() => transition("details")} className="rounded-[12px]">Cancel</Button>
+              </div>
             </div>
           </>
         )}

@@ -420,3 +420,29 @@ class LeadProduct(Base):
 
     lead_id: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), primary_key=True)
     product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"), primary_key=True)
+
+
+class InquiryRevision(Base):
+    """Revision rounds within a single inquiry for negotiation tracking."""
+
+    __tablename__ = "inquiry_revisions"
+    __table_args__ = (
+        Index("ix_inquiry_revisions_inquiry_id", "inquiry_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    inquiry_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    reason: Mapped[str] = mapped_column(String(50), nullable=False)
+    customer_feedback: Mapped[str | None] = mapped_column(Text)
+    target_price: Mapped[str | None] = mapped_column(String(50))
+    quantity: Mapped[str | None] = mapped_column(String(50))
+    packaging: Mapped[str | None] = mapped_column(String(50))
+    delivery_timeline: Mapped[str | None] = mapped_column(String(50))
+    payment_terms: Mapped[str | None] = mapped_column(String(50))
+    additional_requirements: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime)
+    responded_by: Mapped[str | None] = mapped_column(String(100))

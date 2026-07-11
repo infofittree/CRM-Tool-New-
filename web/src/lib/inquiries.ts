@@ -170,6 +170,74 @@ export const DISPLAY_FILTER_OPTIONS = [
   { value: "EOD_COMMITTED", label: "Expected Today" },
   { value: "PENDING_RESPONSE", label: "Expected on Date" },
   { value: "RESPONDED", label: "Answered" },
+  { value: "REVISION_REQUESTED", label: "Revision Requested" },
+  { value: "REVISED_RESPONSE", label: "Revised Quote" },
   { value: "OVERDUE", label: "Overdue" },
   { value: "CLOSED", label: "Closed" },
 ] as const;
+
+// ── Revision / Negotiation ──────────────────────────────────────────────────
+
+export interface InquiryRevision {
+  id: number;
+  inquiry_id: number;
+  revision_number: number;
+  created_by: string;
+  reason: string;
+  customer_feedback: string | null;
+  target_price: string | null;
+  quantity: string | null;
+  packaging: string | null;
+  delivery_timeline: string | null;
+  payment_terms: string | null;
+  additional_requirements: string | null;
+  status: string;
+  created_at: string;
+  responded_at: string | null;
+  responded_by: string | null;
+}
+
+export interface RevisionCreate {
+  reason: string;
+  customer_feedback?: string;
+  target_price?: string;
+  quantity?: string;
+  packaging?: string;
+  delivery_timeline?: string;
+  payment_terms?: string;
+  additional_requirements?: string;
+}
+
+export const REVISION_REASONS: { value: string; label: string }[] = [
+  { value: "budget", label: "Customer budget lower" },
+  { value: "competitor", label: "Competitor quoted lower" },
+  { value: "discount", label: "Customer requesting discount" },
+  { value: "quantity", label: "Quantity changed" },
+  { value: "spec", label: "Product specification changed" },
+  { value: "packaging", label: "Packaging changed" },
+  { value: "delivery", label: "Delivery timeline changed" },
+  { value: "payment", label: "Payment terms changed" },
+  { value: "freight", label: "Freight/Incoterms changed" },
+  { value: "other_quotation", label: "Customer requested another quotation" },
+  { value: "customer_feedback", label: "Customer Feedback" },
+];
+
+export const REVISION_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Awaiting Response",
+  RESPONDED: "Responded",
+};
+
+export async function requestRevision(inquiryId: number, body: RevisionCreate): Promise<any> {
+  const res = await api.post(`/inquiries/${inquiryId}/revision`, body);
+  return res.data;
+}
+
+export async function fetchInquiryRevisions(inquiryId: number): Promise<InquiryRevision[]> {
+  const res = await api.get(`/inquiries/${inquiryId}/revisions`);
+  return res.data;
+}
+
+export async function respondToRevision(inquiryId: number, revId: number, body: { response?: string }): Promise<any> {
+  const res = await api.post(`/inquiries/${inquiryId}/revisions/${revId}/respond`, body);
+  return res.data;
+}

@@ -478,3 +478,44 @@ class ProductResponse(BaseModel):
     name: str
     category: str
     is_active: bool = True
+
+
+# ── Inquiry Revisions ────────────────────────────────────────────────────────
+
+REVISION_REASONS = ("budget", "competitor", "discount", "quantity", "spec", "packaging", "delivery", "payment", "freight", "other_quotation", "customer_feedback")
+
+class RevisionCreate(BaseModel):
+    reason: str
+    customer_feedback: str | None = None
+    target_price: str | None = None
+    quantity: str | None = None
+    packaging: str | None = None
+    delivery_timeline: str | None = None
+    payment_terms: str | None = None
+    additional_requirements: str | None = None
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        if v not in REVISION_REASONS:
+            raise ValueError(f"Reason must be one of: {', '.join(REVISION_REASONS)}")
+        return v
+
+
+class RevisionResponse(BaseModel):
+    id: int
+    inquiry_id: int
+    revision_number: int
+    created_by: str
+    reason: str
+    customer_feedback: str | None = None
+    target_price: str | None = None
+    quantity: str | None = None
+    packaging: str | None = None
+    delivery_timeline: str | None = None
+    payment_terms: str | None = None
+    additional_requirements: str | None = None
+    status: str
+    created_at: datetime
+    responded_at: datetime | None = None
+    responded_by: str | None = None
