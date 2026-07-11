@@ -138,7 +138,20 @@ class CRMService:
             cleaned["lead_id"] = cleaned.get("lead_id") or self.generate_lead_id()
             cleaned["created_date"] = cleaned.get("created_date") or biz_today()
             cleaned["lead_score"] = cleaned.get("lead_score") or self._initial_lead_score(cleaned)
+            product_ids = cleaned.pop("product_ids", None)
             lead = self.leads.create_lead(self.session, cleaned)
+
+            # Assign products via junction table
+            if product_ids:
+                from database.models import LeadProduct, Product
+                for pid in product_ids:
+                    prod = self.session.get(Product, pid)
+                    if prod and prod.is_active:
+                        self.session.add(LeadProduct(lead_id=lead.lead_id, product_id=pid))
+                # Backfill product_interest text field for backward compatibility
+                products = self.session.scalars(select(Product.name).where(Product.id.in_(product_ids))).all()
+                if products:
+                    lead.product_interest = ", ".join(products)
 
             if cleaned.get("last_discussion") or cleaned.get("next_action") or cleaned.get("next_follow_up"):
                 self.followups.add_followup(
@@ -355,6 +368,30 @@ class CRMService:
             self.activity.log_activity(
                 self.session, "EDIT_LEAD", user["full_name"], lead_id, remarks="; ".join(changes)[:1000],
             )
+
+        # Handle product_ids update via junction table
+        if "product_ids" in new_values and new_values["product_ids"] is not None:
+            from database.models import LeadProduct, Product
+            self.session.execute(
+                select(LeadProduct).where(LeadProduct.lead_id == lead_id)
+            )
+            old_links = self.session.scalars(select(LeadProduct).where(LeadProduct.lead_id == lead_id)).all()
+            old_ids = {lp.product_id for lp in old_links}
+            new_ids = set(new_values["product_ids"])
+            if old_ids != new_ids:
+                # Remove old links
+                for lp in old_links:
+                    self.session.delete(lp)
+                # Add new links
+                for pid in new_ids:
+                    prod = self.session.get(Product, pid)
+                    if prod and prod.is_active:
+                        self.session.add(LeadProduct(lead_id=lead_id, product_id=pid))
+                # Update product_interest text field
+                products = self.session.scalars(select(Product.name).where(Product.id.in_(new_ids))).all()
+                lead.product_interest = ", ".join(products) if products else None
+                changes.append(f"products: updated ({len(new_ids)} products)")
+
         return changes
 
     def transfer_lead(self, lead_id: str, new_owner: str, user: dict, reason: str | None = None) -> bool:

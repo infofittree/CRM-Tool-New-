@@ -16,7 +16,7 @@ export function useLeads(page = 1, pageSize = 25, search = "", status = "", coun
 }
 
 export function useLeadFilterOptions() {
-  return useQuery<{ countries: string[]; priorities: string[]; assigned: string[] }>({
+  return useQuery<{ countries: string[]; priorities: string[]; assigned: string[]; products: string[] }>({
     queryKey: ["leads", "filter-options"],
     queryFn: () => api.get("/leads/filter-options").then((r) => r.data),
     ...STALE,

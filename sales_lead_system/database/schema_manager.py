@@ -494,3 +494,53 @@ def ensure_phase10_schema(engine: Engine) -> None:
         conn.execute(sa_text("CREATE INDEX ix_lead_handovers_to_user ON lead_handovers (to_user)"))
         conn.execute(sa_text("CREATE INDEX ix_lead_handovers_status ON lead_handovers (status)"))
         conn.commit()
+
+
+# ── Phase 11: Products ──────────────────────────────────────────────────────
+
+PRODUCT_SEED_DATA = [
+    # Spices
+    ("Turmeric", "Spices"), ("Cumin", "Spices"), ("Black Pepper", "Spices"),
+    ("Red Chili", "Spices"), ("Coriander", "Spices"), ("Mustard", "Spices"),
+    # Pulses
+    ("Moong Dal", "Pulses"), ("Toor Dal", "Pulses"), ("Chana Dal", "Pulses"), ("Urad Dal", "Pulses"),
+    # Grains
+    ("Basmati Rice", "Grains"), ("Wheat", "Grains"), ("Barley", "Grains"),
+    # Herbs
+    ("Moringa", "Herbs"), ("Ashwagandha", "Herbs"), ("Tulsi", "Herbs"),
+    # Seeds
+    ("Tomato Seeds", "Seeds"), ("Chili Seeds", "Seeds"), ("Cucumber Seeds", "Seeds"),
+]
+
+
+def ensure_phase11_schema(engine: Engine) -> None:
+    """Create products and lead_products tables."""
+    from sqlalchemy import text as sa_text
+    existing = set(inspect(engine).get_table_names())
+
+    if "products" not in existing:
+        with engine.connect() as conn:
+            conn.execute(sa_text("""
+                CREATE TABLE products (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(100) NOT NULL UNIQUE,
+                    category VARCHAR(50) NOT NULL,
+                    is_active BOOLEAN NOT NULL DEFAULT 1
+                )
+            """))
+            for name, category in PRODUCT_SEED_DATA:
+                conn.execute(sa_text(f"INSERT INTO products (name, category) VALUES ('{name}', '{category}')"))
+            conn.commit()
+
+    if "lead_products" not in existing:
+        with engine.connect() as conn:
+            conn.execute(sa_text("""
+                CREATE TABLE lead_products (
+                    lead_id VARCHAR(32) NOT NULL,
+                    product_id INTEGER NOT NULL,
+                    PRIMARY KEY (lead_id, product_id)
+                )
+            """))
+            conn.execute(sa_text("CREATE INDEX ix_lead_products_lead_id ON lead_products (lead_id)"))
+            conn.execute(sa_text("CREATE INDEX ix_lead_products_product_id ON lead_products (product_id)"))
+            conn.commit()

@@ -79,17 +79,20 @@ def lead_filter_options(
     scope = _lead_scope_filter(current_user)
     filters = [Lead.deleted_at.is_(None), scope] if scope is not None else [Lead.deleted_at.is_(None)]
     from sqlalchemy import select, func
-    from database.models import User
+    from database.models import Product, User
     countries = [r[0] for r in db.execute(select(func.distinct(Lead.country)).where(*filters, Lead.country.isnot(None))).all()]
     priorities = [r[0] for r in db.execute(select(func.distinct(Lead.priority_level)).where(*filters, Lead.priority_level.isnot(None))).all()]
     # Get assigned names from users table (full names, not truncated CSV values)
     assigned = [r[0] for r in db.execute(
         select(User.full_name).where(User.role.in_(["Salesperson", "Manager", "Admin"]), User.is_active.is_(True))
     ).all()]
+    # Get product names for filtering
+    product_names = [r[0] for r in db.execute(select(Product.name).where(Product.is_active.is_(True)).order_by(Product.name)).all()]
     return {
         "countries": sorted(set(c for c in countries if c)),
         "priorities": sorted(set(p for p in priorities if p)),
         "assigned": sorted(set(a for a in assigned if a)),
+        "products": product_names,
     }
 
 

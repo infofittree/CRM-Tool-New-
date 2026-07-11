@@ -86,6 +86,7 @@ export interface Lead {
   alternate_number: string | null;
   whatsapp_number: string | null;
   product_interest: string | null;
+  product_ids: number[] | null;
   inquiry_date: string | null;
   buyer_engagement_frequency: string | null;
   remarks: string | null;

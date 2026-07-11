@@ -95,6 +95,7 @@ export default function LeadManagement() {
   const [priorityFilter, setPriorityFilter] = useState("");
   const [assignedFilter, setAssignedFilter] = useState("");
   const [scoreFilter, setScoreFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
   const pageSize = 25;
   const { data, isLoading } = useLeads(page, pageSize, search, status, countryFilter, priorityFilter, assignedFilter);
   const { data: filterOptions } = useLeadFilterOptions();
@@ -108,7 +109,7 @@ export default function LeadManagement() {
   const uniqueAssigned = filterOptions?.assigned || [];
   const uniqueScores = ["HOT", "WARM", "COLD"];
 
-  // Client-side filtering only for score (not supported by backend)
+  // Client-side filtering for score and product
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
     return data.items.filter((l: any) => {
@@ -116,11 +117,16 @@ export default function LeadManagement() {
         const band = scoreBand(l.lead_score);
         if (band.label !== scoreFilter) return false;
       }
+      if (productFilter) {
+        const pi = (l.product_interest || "").toLowerCase();
+        if (!pi.includes(productFilter.toLowerCase())) return false;
+      }
       return true;
     });
-  }, [data, scoreFilter]);
+  }, [data, scoreFilter, productFilter]);
 
-  const hasActiveFilters = countryFilter || priorityFilter || assignedFilter || scoreFilter;
+  const hasActiveFilters = countryFilter || priorityFilter || assignedFilter || scoreFilter || productFilter;
+  const uniqueProducts = filterOptions?.products || [];
 
   return (
     <div className="p-5 lg:p-7 space-y-5 max-w-[1400px] mx-auto">
@@ -136,7 +142,7 @@ export default function LeadManagement() {
             <p className="text-[14px] text-muted-foreground/60 mt-1">
               {filteredItems.length}{hasActiveFilters ? ` of ${data.total}` : ""} lead{(hasActiveFilters ? filteredItems.length : data.total) !== 1 ? "s" : ""} in pipeline
               {hasActiveFilters && (
-                <button onClick={() => { setCountryFilter(""); setPriorityFilter(""); setAssignedFilter(""); setScoreFilter(""); }} className="ml-2 text-primary hover:underline text-xs">
+                <button onClick={() => { setCountryFilter(""); setPriorityFilter(""); setAssignedFilter(""); setScoreFilter(""); setProductFilter(""); }} className="ml-2 text-primary hover:underline text-xs">
                   Clear filters
                 </button>
               )}
@@ -180,6 +186,18 @@ export default function LeadManagement() {
             <option key={name} value={name}>{name}</option>
           ))}
         </select>
+        {uniqueProducts.length > 0 && (
+          <select
+            value={productFilter}
+            onChange={(e) => { setProductFilter(e.target.value); setPage(1); }}
+            className="h-10 px-3 rounded-xl border border-input bg-background text-sm transition-all duration-150 hover:border-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 appearance-none cursor-pointer"
+          >
+            <option value="">All Products</option>
+            {uniqueProducts.map((p: string) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Active filter chips */}
@@ -190,6 +208,7 @@ export default function LeadManagement() {
           {priorityFilter && <FilterChip label={`Priority: ${priorityFilter}`} onClear={() => setPriorityFilter("")} />}
           {assignedFilter && <FilterChip label={`Assigned: ${assignedFilter}`} onClear={() => setAssignedFilter("")} />}
           {scoreFilter && <FilterChip label={`Score: ${scoreFilter}`} onClear={() => setScoreFilter("")} />}
+          {productFilter && <FilterChip label={`Product: ${productFilter}`} onClear={() => setProductFilter("")} />}
         </div>
       )}
 

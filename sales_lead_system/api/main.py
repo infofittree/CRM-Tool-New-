@@ -18,10 +18,10 @@ _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _pkg_root not in sys.path:
     sys.path.insert(0, _pkg_root)
 
-from api.routers import analytics, auth, dashboard, followups, inquiries, leads, transfers, users
+from api.routers import analytics, auth, dashboard, followups, inquiries, leads, products, transfers, users
 from database.db_connection import DatabaseConnection
 from database.models import Base
-from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema
+from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema, ensure_phase11_schema
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ async def lifespan(app: FastAPI):
         ensure_phase8_schema(db.engine)
         ensure_phase9_schema(db.engine)
         ensure_phase10_schema(db.engine)
+        ensure_phase11_schema(db.engine)
     except Exception:
         logging.getLogger("api").exception("Schema migration failed (non-fatal)")
     yield
@@ -92,6 +93,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(inquiries.router, prefix="/api/v1", tags=["inquiries"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["analytics"])
 app.include_router(transfers.router, prefix="/api/v1", tags=["transfers"])
+app.include_router(products.router, prefix="/api/v1/products", tags=["products"])
 
 
 # ── Serve Frontend Static Files ──────────────────────────────────────────

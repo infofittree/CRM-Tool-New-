@@ -117,6 +117,7 @@ class LeadCreate(BaseModel):
     alternate_number: str | None = None
     whatsapp_number: str | None = None
     product_interest: str | None = None
+    product_ids: list[int] | None = None
 
 
 class LeadUpdate(BaseModel):
@@ -133,6 +134,7 @@ class LeadUpdate(BaseModel):
     interest_level: str | None = None
     potential_deal_value: str | None = None
     customer_requirements: str | None = None
+    product_ids: list[int] | None = None
 
 
 class LeadTransfer(BaseModel):
@@ -462,3 +464,17 @@ class HandoverResponse(BaseModel):
     responded_by: str | None = None
     created_by: str
     company_name: str | None = None
+
+
+# ── Products ─────────────────────────────────────────────────────────────────
+
+class ProductCreate(BaseModel):
+    name: str
+    category: str
+
+
+class ProductResponse(BaseModel):
+    id: int
+    name: str
+    category: str
+    is_active: bool = True

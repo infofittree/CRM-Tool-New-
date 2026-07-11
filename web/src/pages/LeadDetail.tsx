@@ -228,7 +228,7 @@ export default function LeadDetail() {
                     <DetailItem icon={<MapPin className="w-3.5 h-3.5" />} label="City" value={lead.city} />
                     <DetailItem icon={<MapPin className="w-3.5 h-3.5" />} label="Country" value={lead.country} />
                     <DetailItem icon={<Globe className="w-3.5 h-3.5" />} label="Continent" value={lead.continent} />
-                    <DetailItem icon={<Target className="w-3.5 h-3.5" />} label="Product" value={lead.product_interest} />
+                    <DetailItem icon={<Target className="w-3.5 h-3.5" />} label="Product" value={lead.product_interest || (lead.product_ids && lead.product_ids.length > 0 ? `Linked (${lead.product_ids.length} products)` : null)} />
                   </div>
                 </div>
               </div>

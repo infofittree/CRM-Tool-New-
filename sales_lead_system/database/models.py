@@ -396,3 +396,27 @@ class Inquiry(Base, TimestampMixin):
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     estimated_response_time: Mapped[str | None] = mapped_column(String(50), nullable=True)
     acknowledgement_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class Product(Base):
+    """Product catalog for FitTree's agricultural products."""
+
+    __tablename__ = "products"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class LeadProduct(Base):
+    """Junction table: many-to-many between leads and products."""
+
+    __tablename__ = "lead_products"
+    __table_args__ = (
+        Index("ix_lead_products_lead_id", "lead_id"),
+        Index("ix_lead_products_product_id", "product_id"),
+    )
+
+    lead_id: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), primary_key=True)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"), primary_key=True)

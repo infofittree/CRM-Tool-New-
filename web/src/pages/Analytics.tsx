@@ -82,9 +82,9 @@ export default function Analytics() {
   }, [leads, startDate, endDate]);
 
   const exportCsv = (data: any[], filename: string) => {
-    const headers = ["Lead ID", "Company", "Contact", "Phone", "Email", "Country", "Status", "Source", "Priority", "Score", "Created", "Salesperson", "Interest", "Deal Value", "Requirements"];
+    const headers = ["Lead ID", "Company", "Contact", "Phone", "Email", "Country", "Status", "Source", "Priority", "Score", "Created", "Salesperson", "Interest", "Deal Value", "Requirements", "Product"];
     const rows = data.map((l: any) =>
-      [l.lead_id, l.company_name, l.contact_person, l.phone, l.email, l.country, l.status, l.lead_source, l.priority_level, l.lead_score, l.created_date, l.assigned_to, l.interest_level, l.potential_deal_value, l.customer_requirements]
+      [l.lead_id, l.company_name, l.contact_person, l.phone, l.email, l.country, l.status, l.lead_source, l.priority_level, l.lead_score, l.created_date, l.assigned_to, l.interest_level, l.potential_deal_value, l.customer_requirements, l.product_interest]
         .map((v) => `"${v ?? ""}"`)
         .join(",")
     );
