@@ -61,6 +61,19 @@ export default function InquiryWorkflowModal({ inquiry: initialInquiry, onClose 
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, view]);
 
+  // Lock <main> scroll (same pattern as TaskWorkflowModal)
+  useEffect(() => {
+    const mainEl = document.querySelector("main");
+    if (mainEl) {
+      const savedScrollTop = mainEl.scrollTop;
+      mainEl.style.overflow = "hidden";
+      return () => {
+        mainEl.style.overflow = "";
+        mainEl.scrollTop = savedScrollTop;
+      };
+    }
+  }, []);
+
   // Scroll to top on view change
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
