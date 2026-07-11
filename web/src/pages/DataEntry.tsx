@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { fetchProducts, type Product } from "@/lib/products";
 import { Save, X, Building2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const defaultForm = {
@@ -19,6 +17,7 @@ const defaultForm = {
   lead_category: "B",
   priority_level: "MEDIUM",
   remarks: "",
+  product_interest: "",
   next_action_plan: "",
   next_follow_up: "",
   followup_mode: "",
@@ -35,10 +34,6 @@ export default function DataEntry() {
   const [form, setForm] = useState({ ...defaultForm, next_follow_up: defaultFollowupDate });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
-
-  useEffect(() => { fetchProducts().then(setProducts).catch(() => {}); }, []);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -59,7 +54,6 @@ export default function DataEntry() {
       for (const [k, v] of Object.entries(form)) {
         if (v !== "" && v !== null && v !== undefined) payload[k] = v;
       }
-      if (selectedProductIds.length > 0) payload.product_ids = selectedProductIds;
       const res = await api.post("/leads", payload);
       toast("success", `Lead created: ${res.data.lead_id}`);
       setForm({ ...defaultForm });
@@ -145,24 +139,16 @@ export default function DataEntry() {
             </div>
 
             {/* Products of Interest */}
-            {products.length > 0 && (
-              <div>
-                <label className="text-sm font-medium text-foreground block mb-1.5">Products of Interest</label>
-                <div className="flex flex-wrap gap-2">
-                  {products.map((p) => {
-                    const selected = selectedProductIds.includes(p.id);
-                    return (
-                      <button key={p.id} type="button"
-                        onClick={() => setSelectedProductIds((prev) => selected ? prev.filter((id) => id !== p.id) : [...prev, p.id])}
-                        className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all", selected ? "bg-primary/10 text-primary border-primary/30" : "bg-background border-border/60 text-muted-foreground hover:border-primary/20")}>
-                        {p.name}
-                        <span className="ml-1 text-[10px] opacity-60">{p.category}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Products of Interest</label>
+              <input
+                type="text"
+                value={form.product_interest}
+                onChange={(e) => handleChange("product_interest", e.target.value)}
+                placeholder="e.g. Turmeric, Cumin, Black Pepper"
+                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              />
+            </div>
 
             <div>
               <label className="text-sm font-medium text-foreground block mb-1.5">Remarks</label>
