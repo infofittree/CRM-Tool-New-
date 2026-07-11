@@ -30,13 +30,16 @@ async def lifespan(app: FastAPI):
     try:
         db = DatabaseConnection(logger=logging.getLogger("api"))
         Base.metadata.create_all(db.engine)
+        logging.getLogger("api").info("Base tables created/verified")
         ensure_phase8_schema(db.engine)
         ensure_phase9_schema(db.engine)
         ensure_phase10_schema(db.engine)
         ensure_phase11_schema(db.engine)
+        logging.getLogger("api").info("Phase 11 schema created")
         ensure_phase12_schema(db.engine)
+        logging.getLogger("api").info("Phase 12 schema created")
     except Exception:
-        logging.getLogger("api").exception("Schema migration failed (non-fatal)")
+        logging.getLogger("api").exception("Schema migration failed")
     yield
     logging.getLogger("api").info("FitTree CRM API shutting down")
 
