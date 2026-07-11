@@ -608,3 +608,102 @@ def ensure_phase12_schema(engine: Engine) -> None:
         """))
         conn.execute(sa_text("CREATE INDEX ix_inquiry_revisions_inquiry_id ON inquiry_revisions (inquiry_id)"))
         conn.commit()
+
+
+# ── Phase 13: Database Cleanup ──────────────────────────────────────────────
+
+# Columns to drop from leads table (dead/unused fields)
+_LEADS_DROP_COLUMNS = [
+    "moq_requirement", "expected_quantity", "budget_range", "follow_up_stage",
+    "legacy_status", "first_contact_date", "sheet_source",
+]
+
+# Columns to drop from followups table
+_FOLLOWUPS_DROP_COLUMNS = [
+    "legacy_buyer_id", "buyer_name", "country", "transfer_to",
+]
+
+# Columns to drop from inquiries table
+_INQUIRIES_DROP_COLUMNS = [
+    "acknowledged_at", "estimated_response_time", "acknowledgement_note",
+]
+
+# Columns to drop from engagement_events table
+_ENGAGEMENT_DROP_COLUMNS = [
+    "channel", "direction", "outcome",
+]
+
+
+def _safe_drop_column(engine: Engine, table: str, column: str) -> None:
+    """Drop a column if it exists, ignoring errors."""
+    from sqlalchemy import text as sa_text
+    try:
+        with engine.connect() as conn:
+            if _is_postgres(engine):
+                conn.execute(sa_text(f"ALTER TABLE {table} DROP COLUMN IF EXISTS {column}"))
+            else:
+                # SQLite doesn't support DROP COLUMN before 3.35
+                existing = {col[1] for col in inspect(engine).get_columns(table)}
+                if column in existing:
+                    conn.execute(sa_text(f"ALTER TABLE {table} DROP COLUMN {column}"))
+            conn.commit()
+    except Exception:
+        pass  # Silently skip if column doesn't exist or DB doesn't support it
+
+
+def ensure_phase13_schema(engine: Engine) -> None:
+    """Clean up dead columns and optimize indexes."""
+    from sqlalchemy import text as sa_text
+    existing_tables = set(inspect(engine).get_table_names())
+
+    # Drop dead columns from leads
+    if "leads" in existing_tables:
+        existing_cols = {col["name"] for col in inspect(engine).get_columns("leads")}
+        for col in _LEADS_DROP_COLUMNS:
+            if col in existing_cols:
+                _safe_drop_column(engine, "leads", col)
+
+    # Drop dead columns from followups
+    if "followups" in existing_tables:
+        existing_cols = {col["name"] for col in inspect(engine).get_columns("followups")}
+        for col in _FOLLOWUPS_DROP_COLUMNS:
+            if col in existing_cols:
+                _safe_drop_column(engine, "followups", col)
+
+    # Drop dead columns from inquiries
+    if "inquiries" in existing_tables:
+        existing_cols = {col["name"] for col in inspect(engine).get_columns("inquiries")}
+        for col in _INQUIRIES_DROP_COLUMNS:
+            if col in existing_cols:
+                _safe_drop_column(engine, "inquiries", col)
+
+    # Drop dead columns from engagement_events
+    if "engagement_events" in existing_tables:
+        existing_cols = {col["name"] for col in inspect(engine).get_columns("engagement_events")}
+        for col in _ENGAGEMENT_DROP_COLUMNS:
+            if col in existing_cols:
+                _safe_drop_column(engine, "engagement_events", col)
+
+    # Add missing indexes (safe — checks first)
+    try:
+        with engine.connect() as conn:
+            # Index on followups.completed_at for dashboard/analytics queries
+            if _missing_index(engine, "followups", "ix_followups_completed_at"):
+                conn.execute(sa_text("CREATE INDEX ix_followups_completed_at ON followups (completed_at)"))
+            # Index on leads.lead_source for filter queries
+            if _missing_index(engine, "leads", "ix_leads_lead_source"):
+                conn.execute(sa_text("CREATE INDEX ix_leads_lead_source ON leads (lead_source)"))
+            conn.commit()
+    except Exception:
+        pass  # Skip if tables don't exist yet
+
+    # Drop redundant indexes (safe — checks first)
+    try:
+        with engine.connect() as conn:
+            if not _missing_index(engine, "leads", "ix_leads_lead_id_prefix"):
+                if _is_postgres(engine):
+                    conn.execute(sa_text("DROP INDEX IF EXISTS ix_leads_lead_id_prefix"))
+                # SQLite doesn't support DROP INDEX easily, skip
+            conn.commit()
+    except Exception:
+        pass

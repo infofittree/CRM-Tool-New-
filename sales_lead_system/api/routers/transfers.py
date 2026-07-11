@@ -14,8 +14,6 @@ from database.models import ActivityLog, CrmAlert, FollowUp, Inquiry, Lead, Lead
 
 router = APIRouter()
 
-HANDOVER_REASONS = ("product_expertise", "language", "region", "customer_request", "workload", "leave", "manager_decision", "other")
-
 
 def _serialize_handover(h: LeadHandover, company_name: str | None = None) -> dict:
     return {

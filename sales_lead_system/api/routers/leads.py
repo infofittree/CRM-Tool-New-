@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from api.deps import get_current_user, get_db, require_role
 from api.schemas import (
-    DuplicateCheckResult, FollowUpCreate, FollowUpResponse,
+    DuplicateCheckResult, FollowUpResponse,
     LeadCreate, LeadResponse, LeadTransfer, LeadUpdate,
     NoteRequest, PaginatedResponse, QuickFollowup, RescheduleRequest,
 )

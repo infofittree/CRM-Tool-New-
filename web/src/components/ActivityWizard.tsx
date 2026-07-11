@@ -232,7 +232,6 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
     } catch (err: any) {
       const msg = err.response?.data?.detail || "Failed to complete activity. Please try again.";
       setWizardError(msg);
-      console.error("Activity wizard submission failed:", err);
     } finally {
       setSubmitting(false);
     }

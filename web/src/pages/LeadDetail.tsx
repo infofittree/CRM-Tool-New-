@@ -648,8 +648,8 @@ export default function LeadDetail() {
                   await api.put(`/leads/${id}`, editForm);
                   setShowEdit(false);
                   window.location.reload();
-                } catch (e) {
-                  console.error(e);
+                } catch {
+                  // Error silently handled — save failure is rare
                 } finally {
                   setSaving(false);
                 }

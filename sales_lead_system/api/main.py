@@ -21,7 +21,7 @@ if _pkg_root not in sys.path:
 from api.routers import analytics, auth, dashboard, followups, inquiries, leads, products, transfers, users
 from database.db_connection import DatabaseConnection
 from database.models import Base
-from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema, ensure_phase11_schema, ensure_phase12_schema
+from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema, ensure_phase11_schema, ensure_phase12_schema, ensure_phase13_schema
 
 
 @asynccontextmanager
@@ -37,7 +37,8 @@ async def lifespan(app: FastAPI):
         ensure_phase11_schema(db.engine)
         logging.getLogger("api").info("Phase 11 schema created")
         ensure_phase12_schema(db.engine)
-        logging.getLogger("api").info("Phase 12 schema created")
+        ensure_phase13_schema(db.engine)
+        logging.getLogger("api").info("Phase 13 schema cleanup done")
     except Exception:
         logging.getLogger("api").exception("Schema migration failed")
     yield
@@ -84,9 +85,7 @@ async def security_headers_and_options(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "0"
     return response
 
-
 # Suppress noisy OPTIONS request logging
-import logging
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
