@@ -568,6 +568,14 @@ def ensure_phase11_schema(engine: Engine) -> None:
             conn.execute(sa_text("CREATE INDEX ix_lead_products_product_id ON lead_products (product_id)"))
             conn.commit()
 
+    # Seed products if table is empty (handles case where create_all created table without data)
+    with engine.connect() as conn:
+        count = conn.execute(sa_text("SELECT COUNT(*) FROM products")).scalar()
+        if count == 0:
+            for name, category in PRODUCT_SEED_DATA:
+                conn.execute(sa_text("INSERT INTO products (name, category) VALUES (:name, :category)"), {"name": name, "category": category})
+            conn.commit()
+
 
 # ── Phase 12: Inquiry Revisions ─────────────────────────────────────────────
 
