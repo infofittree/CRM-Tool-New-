@@ -245,7 +245,7 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
   const innerContent = (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between p-5 border-b">
+      <div className={cn("flex items-center justify-between p-5 border-b", embedded && "shrink-0")}>
         <div>
           <h2 className="text-lg font-bold">Complete Activity</h2>
           <p className="text-sm text-muted-foreground">{companyName}</p>
@@ -259,7 +259,7 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
       </div>
 
         {/* Progress */}
-        <div className="px-5 pt-4 pb-2">
+        <div className={cn("px-5 pt-4 pb-2", embedded && "shrink-0")}>
           <div className="flex items-center gap-1.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div key={i} className="flex-1 flex items-center gap-1.5">
@@ -277,7 +277,10 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-5 min-h-[280px]">
+        <div className={cn(
+          "px-5 py-5 space-y-5",
+          embedded ? "flex-1 overflow-y-auto min-h-0" : "min-h-[280px]"
+        )}>
           {/* ── STEP 1 ── */}
           {step === 1 && (
             <div className="space-y-4">
@@ -837,7 +840,7 @@ export default function ActivityWizard({ followupId, leadStatus, assignedTo, com
             {wizardError}
           </div>
         )}
-        <div className="flex items-center justify-between p-5 border-t">
+        <div className={cn("flex items-center justify-between p-5 border-t", embedded && "shrink-0")}>
           <Button variant="ghost" onClick={() => step > 1 ? setStep(step - 1) : onClose()} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             {step === 1 ? "Cancel" : "Back"}
