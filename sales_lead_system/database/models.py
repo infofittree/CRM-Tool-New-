@@ -80,12 +80,8 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     lead_source: Mapped[str | None] = mapped_column(String(100))
     product_interest: Mapped[str | None] = mapped_column(String(255))
     probability: Mapped[str | None] = mapped_column(String(20))
-    follow_up_stage: Mapped[str | None] = mapped_column(String(50))
     mode: Mapped[str | None] = mapped_column(String(50))
     quotation_status: Mapped[str | None] = mapped_column(String(50))
-    moq_requirement: Mapped[str | None] = mapped_column(String(100))
-    expected_quantity: Mapped[str | None] = mapped_column(String(100))
-    budget_range: Mapped[str | None] = mapped_column(String(100))
     priority_level: Mapped[str] = mapped_column(String(20), nullable=False, default="MEDIUM", server_default="MEDIUM", index=True)
     remarks: Mapped[str | None] = deferred(mapped_column(Text))
     procurement_remarks: Mapped[str | None] = deferred(mapped_column(Text))
@@ -93,9 +89,6 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     created_date: Mapped[date | None] = mapped_column(Date)
     lead_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0")
     last_contact_date: Mapped[date | None] = mapped_column(Date)
-    # Phase 3 — aligned with updated Google Sheet (2026-06-01)
-    first_contact_date: Mapped[date | None] = mapped_column(Date)
-    sheet_source: Mapped[str | None] = mapped_column(String(50))  # Buyer_Master | Alibaba
     # Phase 4 — new 10-stage funnel (2026-06-02 restructure)
     address: Mapped[str | None] = deferred(mapped_column(Text))            # full postal address
     inquiry_date: Mapped[date | None] = mapped_column(Date)                # date the buyer inquired
@@ -103,7 +96,6 @@ class Lead(Base, TimestampMixin, SoftDeleteMixin):
     buyer_engagement_frequency: Mapped[str | None] = mapped_column(String(20))  # Frequent / Medium / Low
     next_action_plan: Mapped[str | None] = deferred(mapped_column(Text))   # mandatory for new leads
     lost_reason: Mapped[str | None] = mapped_column(String(100))           # mandatory when status = Lost
-    legacy_status: Mapped[str | None] = mapped_column(String(50))          # pre-migration status preserved
     # Sprint 2 — Lead progression from task outcome
     interest_level: Mapped[str | None] = mapped_column(String(20))          # LOW, MEDIUM, HIGH, VERY_HIGH
     potential_deal_value: Mapped[str | None] = mapped_column(String(50))   # e.g., "50000", "100000-200000"
@@ -131,11 +123,7 @@ class FollowUp(Base):
 
     followup_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     lead_id: Mapped[str] = mapped_column(String(32), ForeignKey("leads.lead_id"), nullable=False)
-    legacy_buyer_id: Mapped[str | None] = mapped_column(String(50), index=True)
-    buyer_name: Mapped[str | None] = mapped_column(String(255))
-    country: Mapped[str | None] = mapped_column(String(100))
     assigned_to: Mapped[str | None] = mapped_column(String(100))
-    transfer_to: Mapped[str | None] = mapped_column(String(100))
     followup_date: Mapped[date | None] = mapped_column(Date)
     discussion: Mapped[str | None] = mapped_column(Text)
     next_action: Mapped[str | None] = mapped_column(String(255))
@@ -291,9 +279,6 @@ class EngagementEvent(Base):
     user_name: Mapped[str | None] = mapped_column(String(100))
     # call | whatsapp | email | meeting | note | status_change | followup
     event_type: Mapped[str] = mapped_column(String(40), nullable=False)
-    channel: Mapped[str | None] = mapped_column(String(40))
-    direction: Mapped[str | None] = mapped_column(String(20))  # outbound | inbound
-    outcome: Mapped[str | None] = mapped_column(String(60))    # answered | no_answer | replied | etc.
     notes: Mapped[str | None] = mapped_column(Text)
     occurred_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
@@ -392,10 +377,6 @@ class Inquiry(Base, TimestampMixin):
     commitment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     expected_response_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     committed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # legacy columns — kept for backward compatibility, no longer used
-    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    estimated_response_time: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    acknowledgement_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Product(Base):

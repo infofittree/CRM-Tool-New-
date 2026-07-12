@@ -264,9 +264,6 @@ def process_activity_wizard(
             lead_id=lead.lead_id,
             user_name=user_name,
             event_type=event_type,
-            channel=event_type,
-            direction=direction,
-            outcome=outcome,
             notes=notes,
             occurred_at=now,
         )

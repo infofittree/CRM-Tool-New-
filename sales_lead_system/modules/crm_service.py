@@ -219,8 +219,6 @@ class CRMService:
                 lead_id=lead_id,
                 user_name=user["full_name"],
                 event_type=channel_map.get(mode, "followup"),
-                channel=mode or None,
-                direction="outbound",
                 notes=payload.get("discussion") or payload.get("next_action"),
             )
         )
