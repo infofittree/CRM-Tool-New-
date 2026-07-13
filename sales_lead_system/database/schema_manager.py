@@ -707,3 +707,45 @@ def ensure_phase13_schema(engine: Engine) -> None:
             conn.commit()
     except Exception:
         pass
+
+
+# ── Phase 14: Performance Optimization ──────────────────────────────────────
+
+def ensure_phase14_schema(engine: Engine) -> None:
+    """Add performance indexes and drop redundant ones."""
+    from sqlalchemy import text as sa_text
+    is_pg = _is_postgres(engine)
+
+    try:
+        with engine.connect() as conn:
+            # Followup optimization indexes
+            if _missing_index(engine, "followups", "ix_followups_lead_followup_id"):
+                conn.execute(sa_text("CREATE INDEX ix_followups_lead_followup_id ON followups (lead_id, followup_id)"))
+            if _missing_index(engine, "followups", "ix_followups_created_at"):
+                conn.execute(sa_text("CREATE INDEX ix_followups_created_at ON followups (created_at)"))
+            if _missing_index(engine, "followups", "ix_followups_completed_next"):
+                conn.execute(sa_text("CREATE INDEX ix_followups_completed_next ON followups (completed_at, next_followup)"))
+
+            # Lead scope + ORDER BY optimization
+            if _missing_index(engine, "leads", "ix_leads_scope_updated"):
+                conn.execute(sa_text("CREATE INDEX ix_leads_scope_updated ON leads (deleted_at, assigned_to, updated_at DESC)"))
+
+            # Engagement optimization
+            if _missing_index(engine, "engagement_events", "ix_engagement_lead_occurred"):
+                conn.execute(sa_text("CREATE INDEX ix_engagement_lead_occurred ON engagement_events (lead_id, occurred_at)"))
+
+            # Inquiry optimization
+            if _missing_index(engine, "inquiries", "ix_inquiries_type"):
+                conn.execute(sa_text("CREATE INDEX ix_inquiries_type ON inquiries (type)"))
+
+            # Activity log optimization
+            if _missing_index(engine, "activity_logs", "ix_activity_logs_user_name"):
+                conn.execute(sa_text("CREATE INDEX ix_activity_logs_user_name ON activity_logs (user_name)"))
+
+            # Drop redundant index (duplicates PK)
+            if is_pg and not _missing_index(engine, "leads", "ix_leads_lead_id_prefix"):
+                conn.execute(sa_text("DROP INDEX IF EXISTS ix_leads_lead_id_prefix"))
+
+            conn.commit()
+    except Exception:
+        pass  # Non-fatal — indexes already exist or tables not ready

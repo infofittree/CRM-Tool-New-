@@ -21,7 +21,7 @@ if _pkg_root not in sys.path:
 from api.routers import analytics, auth, dashboard, followups, inquiries, leads, products, transfers, users
 from database.db_connection import DatabaseConnection
 from database.models import Base
-from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema, ensure_phase11_schema, ensure_phase12_schema, ensure_phase13_schema
+from database.schema_manager import ensure_phase8_schema, ensure_phase9_schema, ensure_phase10_schema, ensure_phase11_schema, ensure_phase12_schema, ensure_phase13_schema, ensure_phase14_schema
 
 
 @asynccontextmanager
@@ -38,7 +38,8 @@ async def lifespan(app: FastAPI):
         logging.getLogger("api").info("Phase 11 schema created")
         ensure_phase12_schema(db.engine)
         ensure_phase13_schema(db.engine)
-        logging.getLogger("api").info("Phase 13 schema cleanup done")
+        ensure_phase14_schema(db.engine)
+        logging.getLogger("api").info("Phase 14 performance indexes applied")
     except Exception:
         logging.getLogger("api").exception("Schema migration failed")
     yield
