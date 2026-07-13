@@ -63,7 +63,8 @@ Phase 2–9: Legacy column additions, status normalization, soft deletes, scorin
 Phase 10: LeadHandover table (transfer system)
 Phase 11: Products + LeadProducts tables (19 seeded products)
 Phase 12: InquiryRevisions table (negotiation workflow)
-Phase 13: Database cleanup (dead columns dropped, indexes optimized)
+Phase 13: Database cleanup (dead columns dropped, redundant indexes removed)
+Phase 14: Performance indexes (7 new composite indexes, 1 redundant dropped)
 
 ### Key Relationships
 - `Lead` → `FollowUp` (one-to-many)
@@ -144,6 +145,12 @@ Phase 13: Database cleanup (dead columns dropped, indexes optimized)
 - **Filters**: Product filter on Leads page
 - **CSV Export**: Product column included
 
+### 8. Database Performance
+- **7 composite indexes** added in Phase 14 for query optimization
+- **N+1 query fix**: `get_team_comparison()` reduced from 71+ queries to 3 batch queries
+- **Full table scan fix**: `get_executive_summary()` now selects only needed columns
+- **Index coverage**: `followups.completed_at`, `leads.(deleted_at,assigned_to,updated_at)`, `engagement_events.(lead_id,occurred_at)`, `inquiries.type`, `activity_logs.user_name`
+
 ---
 
 ## Frontend Pages
@@ -217,3 +224,24 @@ Open `http://localhost:5173` → Login with credentials from `DEFAULT_USERS_JSON
 - **Deploy**: Push to main → Railway auto-deploys
 - **web/dist/**: Must be committed (Railway has no Node.js buildpack)
 - **Database password**: Rotated 2026-06-29. Old password compromised in git history. New password in Railway `DATABASE_URL` env var only.
+
+---
+
+## Users (8 active)
+
+| Username | Role | Full Name |
+|----------|------|-----------|
+| yashsharma | Admin | Yash Sharma |
+| shiksha | Admin | Shiksha |
+| maruti | Admin | Maruti |
+| poonam | Manager | Poonam |
+| vaidehi | Salesperson | Vaidehi |
+| rahul | Salesperson | Rahul |
+| kusum | Salesperson | Kusum |
+| vivek | Procurement | Vivek |
+
+---
+
+## Issues & Fixes
+
+See `ISSUES.md` for a complete log of all issues encountered and resolved during development.
