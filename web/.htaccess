@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteBase /
+
+# Handle requests that aren't files or directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Serve index.html for all SPA routes
+RewriteRule . /index.html [L]
