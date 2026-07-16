@@ -150,7 +150,7 @@ def create_lead(body: LeadCreate, current_user: dict = Depends(get_current_user)
     # Auto-assign to current user if not explicitly provided
     if not payload.get("assigned_to"):
         payload["assigned_to"] = current_user.get("full_name", current_user.get("username", ""))
-    result = service.save_lead_from_entry(payload, current_user)
+    result = service.save_lead_from_entry(payload, current_user, force=True)
     if not result.ok:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.message)
     return {"lead_id": result.lead_id, "message": result.message}
