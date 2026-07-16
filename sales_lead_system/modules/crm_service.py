@@ -534,8 +534,8 @@ class CRMService:
     def _validate_entry(self, payload: dict[str, Any]) -> list[str]:
         from datetime import timedelta
         errors = []
-        # Required core fields (company name, phone, and email are all OPTIONAL)
-        for field in ("contact_person", "status", "assigned_to", "country"):
+        # Required core fields
+        for field in ("contact_person", "status", "assigned_to"):
             if not payload.get(field):
                 label = field.replace("_", " ").title()
                 errors.append(f"{label} is required")
