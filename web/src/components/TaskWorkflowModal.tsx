@@ -8,10 +8,11 @@ import api, { type Task, type ActivityWizardResponse } from "@/lib/api";
 import ActivityWizard from "@/components/ActivityWizard";
 import { getTaskTypeConfig, getTaskOrigin } from "@/lib/taskTypes";
 import {
-  X, CheckCircle2, Phone, MessageSquare, ArrowRight, AlertTriangle, Calendar,
+  X, CheckCircle2, Phone, MessageSquare, ArrowRight, ArrowLeft, AlertTriangle,
+  User, Building2, Globe, Briefcase, Star,
 } from "lucide-react";
 
-type ModalView = "details" | "wizard" | "success";
+type ModalView = "details" | "wizard" | "success" | "lead";
 
 interface TaskWorkflowModalProps {
   task: Task;
@@ -35,6 +36,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (view === "wizard") return; // Let wizard handle its own ESC
+        if (view === "lead") { setView("details"); return; }
         onClose();
       }
     };
@@ -233,7 +235,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
                     <Button
                       variant="outline"
                       size="lg"
-                      onClick={() => { navigate(`/leads/${task.lead_id}`); onClose(); }}
+                      onClick={() => setView("lead")}
                       className="gap-2 rounded-[12px]"
                     >
                       <ArrowRight className="w-4 h-4" />Open Lead
@@ -244,6 +246,136 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
                     Close
                   </Button>
                 )}
+              </div>
+            </div>
+          </>
+        )}
+
+
+        {/* ── View: Lead Brief ── */}
+        {view === "lead" && (
+          <>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-border/40 shrink-0">
+              <button onClick={() => setView("details")} className="p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 min-w-0">
+                <User className="w-4 h-4 text-primary shrink-0" />
+                <h2 className="font-bold text-[15px] truncate">{task.company_name || "Lead Brief"}</h2>
+                <span className="text-[11px] text-muted-foreground/50 font-medium">Lead {task.lead_id}</span>
+              </div>
+              <button onClick={onClose} className="ml-auto p-2 rounded-lg hover:bg-muted/60 transition-colors">
+                <X className="w-4 h-4 text-muted-foreground/60" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              {/* Status and Score */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={cn(
+                  "text-xs font-bold px-2.5 py-1 rounded-full border",
+                  task.status === "Order Closed" ? "bg-green-50 text-green-700 border-green-200" :
+                  task.status === "Lost" ? "bg-red-50 text-red-700 border-red-200" :
+                  task.status === "Negotiation" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                  "bg-blue-50 text-blue-700 border-blue-200"
+                )}>
+                  {task.standard_status || task.status}
+                </span>
+                <span className={cn(
+                  "text-xs font-bold px-2.5 py-1 rounded-full border",
+                  task.band === "HOT" ? "bg-red-50 text-red-700 border-red-200" :
+                  task.band === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                  "bg-slate-50 text-slate-700 border-slate-200"
+                )}>
+                  <Star className="w-3 h-3 inline mr-1" />{task.band} · Score {task.score}
+                </span>
+                {task.lead_category && (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-muted/40 text-muted-foreground border border-border/40">
+                    {task.lead_category}
+                  </span>
+                )}
+              </div>
+
+              {/* Contact card */}
+              <div className="rounded-[14px] bg-muted/20 p-4">
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-3">Contact Information</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <InfoRow label="Contact Person" value={task.contact_person || "—"} />
+                  <InfoRow label="Company" value={task.company_name || "—"} />
+                  {task.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                      <span className="font-medium">{task.phone}</span>
+                    </div>
+                  )}
+                  {task.email && (
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                      <span className="font-medium truncate">{task.email}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Lead Details */}
+              <div className="rounded-[14px] bg-muted/20 p-4">
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-3">Lead Details</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                    <span className="font-medium">{task.country || "No country"}</span>
+                  </div>
+                  <InfoRow label="Assigned To" value={task.assigned_to || "—"} />
+                  <InfoRow label="Priority" value={task.band || "—"} />
+                  <InfoRow label="Engagement" value={task.buyer_engagement_frequency || "—"} />
+                </div>
+              </div>
+
+              {/* Requirements */}
+              <div className="rounded-[14px] bg-muted/20 p-4">
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-3">Requirements</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <InfoRow label="Product Interest" value={task.product_interest || "—"} />
+                  <InfoRow label="Interest Level" value={task.interest_level || "—"} />
+                  <InfoRow label="Deal Value" value={task.potential_deal_value || "—"} />
+                  <InfoRow label="Last Contact" value={task.last_contact_date ? formatDate(task.last_contact_date) : "—"} />
+                </div>
+                {task.customer_requirements && (
+                  <div className="mt-3 pt-3 border-t border-border/40">
+                    <p className="text-[11px] text-muted-foreground/60 mb-0.5">Customer Requirements</p>
+                    <p className="text-sm font-medium text-foreground">{task.customer_requirements}</p>
+                  </div>
+                )}
+                {task.next_action_plan && (
+                  <div className="mt-3 pt-3 border-t border-border/40">
+                    <p className="text-[11px] text-muted-foreground/60 mb-0.5">Action Plan</p>
+                    <p className="text-sm font-medium text-primary">{task.next_action_plan}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="shrink-0 px-6 py-4 border-t border-border/40">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 rounded-[12px]"
+                  onClick={() => setView("details")}
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Task
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 flex-1 rounded-[12px]"
+                  onClick={() => { navigate(`/leads/${task.lead_id}`); onClose(); }}
+                >
+                  <Briefcase className="w-4 h-4" /> Open Full Lead
+                </Button>
               </div>
             </div>
           </>
