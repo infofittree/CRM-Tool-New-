@@ -1,0 +1,20 @@
+{
+  "venvPath": "./sales_lead_system",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "sales_lead_system",
+      "extraPaths": ["sales_lead_system"]
+    }
+  ],
+  "include": [
+    "sales_lead_system"
+  ],
+  "exclude": [
+    "web",
+    "node_modules",
+    ".mimocode",
+    "report_gen",
+    ".devcontainer"
+  ]
+}
