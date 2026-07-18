@@ -8,6 +8,14 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 
+# ── Inquiry status constants (kept in sync with models.py) ──────────────────
+_INQUIRY_STATUSES = frozenset({
+    "OPEN", "EOD_COMMITTED", "PENDING_RESPONSE",
+    "RESPONDED", "OVERDUE", "CLOSED",
+    "REVISION_REQUESTED", "REVISED_RESPONSE",
+})
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
@@ -336,6 +344,13 @@ class InquiryUpdate(BaseModel):
     response: str | None = None
     status: str | None = None
 
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str | None) -> str | None:
+        if v is not None and v not in _INQUIRY_STATUSES:
+            raise ValueError(f"Invalid inquiry status. Allowed: {sorted(_INQUIRY_STATUSES)}")
+        return v
+
 
 class InquiryDetail(BaseModel):
     id: int
@@ -519,3 +534,10 @@ class RevisionResponse(BaseModel):
     created_at: datetime
     responded_at: datetime | None = None
     responded_by: str | None = None
+
+
+# ── Revision Response ─────────────────────────────────────────────────────────
+
+class RevisionRespondRequest(BaseModel):
+    """Payload for Procurement responding to a revision request."""
+    response: str | None = None

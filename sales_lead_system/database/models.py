@@ -427,3 +427,27 @@ class InquiryRevision(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     responded_at: Mapped[datetime | None] = mapped_column(DateTime)
     responded_by: Mapped[str | None] = mapped_column(String(100))
+
+
+# ── Auth: Login attempt tracking (Phase 15) ─────────────────────────────────
+
+class LoginAttempt(Base):
+    """Per-username failed-login timestamps for rate limiting.
+
+    Replaces the in-memory `_login_attempts` dict that lived in
+    ``api/routers/auth.py``. Persistence matters because the in-memory
+    counter was wiped on every restart and never shared across workers,
+    which made the 429 lockout unreliable on multi-worker deploys.
+
+    Cleanup is opportunistic (handled by ``_prune_login_attempts`` in
+    auth.py on each login), so no scheduled job is required.
+    """
+
+    __tablename__ = "login_attempts"
+    __table_args__ = (
+        Index("ix_login_attempts_username_attempted", "username_key", "attempted_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username_key: Mapped[str] = mapped_column(String(150), nullable=False)
+    attempted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

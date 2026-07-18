@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[ProductResponse])
-def list_products(db: Session = Depends(get_db)):
+def list_products(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """List all active products."""
     products = db.scalars(select(Product).where(Product.is_active.is_(True)).order_by(Product.category, Product.name)).all()
     return products

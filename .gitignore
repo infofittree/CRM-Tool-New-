@@ -42,9 +42,12 @@ sales_lead_system/exports/
 sales_lead_system/outputs/
 outputs/
 
-# ─── Logs ─────────────────────────────────────────────────
+# ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 streamlit_log.txt
+# Runtime log text files (may contain PII — never commit)
+web/backend_log.txt
+web/frontend_log.txt
 
 # ─── Editor / OS ──────────────────────────────────────────
 .vscode/

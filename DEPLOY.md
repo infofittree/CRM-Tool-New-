@@ -68,18 +68,19 @@ CMD ["uvicorn", "sales_lead_system.api.main:app", "--host", "0.0.0.0", "--port",
 
 ---
 
-## Default Credentials
+## Default Users
 
-| Username | Password | Role |
-|----------|----------|------|
-| yashsharma | Yash123 | Admin |
-| shiksha | Shiksha123 | Admin |
-| poonam | Poonam123 | Manager |
-| vaidehi | Vaidehi123 | Salesperson |
-| rahul | Rahul123 | Salesperson |
-| kusum | Kusum123 | Salesperson |
+Default users are seeded from the `DEFAULT_USERS_JSON` Railway env var
+on first boot, in the format:
 
-**Change these passwords after first deployment!**
+```json
+[["username", "password", "Full Name", "Admin"], ...]
+```
+
+**Rotate every password before first use.** Plain-text default passwords
+must not be committed to version control or shared in documentation.
+Manage users in production through the in-app Settings page or via the
+`POST /api/v1/users` endpoint (Admin role only).
 
 ---
 

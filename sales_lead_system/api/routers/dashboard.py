@@ -305,6 +305,12 @@ def mark_alert_read(
     alert = db.get(CrmAlert, alert_id)
     if not alert:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+    # Ownership check: Salesperson can only mark their own alerts as read
+    role = current_user.get("role", "")
+    if role not in ("Admin", "Manager"):
+        name = (current_user.get("full_name") or "").strip()
+        if alert.assigned_to and alert.assigned_to.strip().lower() != name.lower():
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot modify another user's alert")
     alert.is_read = True
     db.commit()
     return {"ok": True}

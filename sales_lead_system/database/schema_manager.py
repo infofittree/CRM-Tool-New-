@@ -749,3 +749,58 @@ def ensure_phase14_schema(engine: Engine) -> None:
             conn.commit()
     except Exception:
         pass  # Non-fatal — indexes already exist or tables not ready
+
+
+# ── Phase 15: Login-attempt rate-limit table ───────────────────────────────
+
+PHASE15_LOGIN_ATTEMPTS_DDL_MYSQL = """
+CREATE TABLE login_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username_key VARCHAR(150) NOT NULL,
+    attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX ix_login_attempts_username_attempted (username_key, attempted_at)
+)
+"""
+
+PHASE15_LOGIN_ATTEMPTS_DDL_POSTGRES = """
+CREATE TABLE login_attempts (
+    id SERIAL PRIMARY KEY,
+    username_key VARCHAR(150) NOT NULL,
+    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+PHASE15_LOGIN_ATTEMPTS_DDL_SQLITE = """
+CREATE TABLE login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username_key VARCHAR(150) NOT NULL,
+    attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+
+def ensure_phase15_schema(engine: Engine) -> None:
+    """Create the login_attempts table for DB-backed rate limiting.
+
+    Idempotent: skips if the table already exists. Backs the
+    ``_login_attempts`` in-memory lockout in ``api/routers/auth.py``
+    with persistent storage so the lockout survives process restarts
+    and is shared across workers.
+    """
+    from sqlalchemy import text as sa_text
+
+    existing = set(inspect(engine).get_table_names())
+    if "login_attempts" in existing:
+        return
+
+    with engine.begin() as conn:
+        if _is_mysql(engine):
+            conn.execute(sa_text(PHASE15_LOGIN_ATTEMPTS_DDL_MYSQL))
+        elif _is_postgres(engine):
+            conn.execute(sa_text(PHASE15_LOGIN_ATTEMPTS_DDL_POSTGRES))
+        else:
+            conn.execute(sa_text(PHASE15_LOGIN_ATTEMPTS_DDL_SQLITE))
+            conn.execute(sa_text(
+                "CREATE INDEX IF NOT EXISTS ix_login_attempts_username_attempted "
+                "ON login_attempts (username_key, attempted_at)"
+            ))

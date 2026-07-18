@@ -9,7 +9,7 @@ from sqlalchemy import select, func, update as sql_update
 from sqlalchemy.orm import Session as DBSession
 
 from api.deps import get_current_user, get_db
-from api.schemas import CommitmentRequest, InquiryCreate, InquiryDetail, InquiryResponse, InquirySummary, InquiryUpdate, RevisionCreate
+from api.schemas import CommitmentRequest, InquiryCreate, InquiryDetail, InquiryResponse, InquirySummary, InquiryUpdate, RevisionCreate, RevisionRespondRequest
 from database.models import Inquiry, Lead, User, InquiryRevision
 from database.models import INQUIRY_COMMITMENT_TYPES
 
@@ -379,7 +379,7 @@ def list_revisions(inquiry_id: int, user: dict = Depends(get_current_user), db: 
 
 
 @router.post("/inquiries/{inquiry_id}/revisions/{rev_id}/respond", response_model=dict)
-def respond_to_revision(inquiry_id: int, rev_id: int, body: dict, user: dict = Depends(get_current_user), db: DBSession = Depends(get_db)):
+def respond_to_revision(inquiry_id: int, rev_id: int, body: RevisionRespondRequest, user: dict = Depends(get_current_user), db: DBSession = Depends(get_db)):
     """Procurement responds to a revision request."""
     role = user["role"]
     if role not in ("Admin", "Manager", "Procurement"):
@@ -401,8 +401,8 @@ def respond_to_revision(inquiry_id: int, rev_id: int, body: dict, user: dict = D
     revision.responded_by = user["full_name"]
 
     # Update inquiry with revised response and status
-    if body.get("response"):
-        inquiry.response = body["response"]
+    if body.response:
+        inquiry.response = body.response
     inquiry.status = "REVISED_RESPONSE"
     inquiry.responded_at = now
     inquiry.updated_at = now

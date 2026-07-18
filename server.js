@@ -17,8 +17,17 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  let filePath = path.join(DIST, req.url === '/' ? 'index.html' : req.url);
-  
+  const DIST_RESOLVED = path.resolve(DIST);
+
+  let filePath = path.resolve(DIST, req.url === '/' ? 'index.html' : req.url.split('?')[0]);
+
+  // Security: prevent path traversal — reject paths outside of DIST
+  if (!filePath.startsWith(DIST_RESOLVED + path.sep) && filePath !== DIST_RESOLVED) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(DIST, 'index.html');
   }

@@ -78,8 +78,6 @@ class DatabaseConnection:
         finally:
             server_engine.dispose()
 
-    _CONTROL_FLOW_EXC = {"RerunException", "RerunData", "StopException", "StreamlitAPIException"}
-
     @contextmanager
     def session_scope(self) -> Iterator[Session]:
         """Provide a transactional session with commit/rollback handling."""
@@ -91,16 +89,9 @@ class DatabaseConnection:
             session.rollback()
             self.logger.exception("Database operation failed")
             raise
-        except BaseException as exc:
-            if type(exc).__name__ in self._CONTROL_FLOW_EXC:
-                try:
-                    session.commit()
-                except SQLAlchemyError:
-                    session.rollback()
-                    self.logger.exception("Commit on rerun failed")
-            else:
-                session.rollback()
-                self.logger.exception("Unexpected database operation failure")
+        except BaseException:
+            session.rollback()
+            self.logger.exception("Unexpected database operation failure")
             raise
         finally:
             session.close()
