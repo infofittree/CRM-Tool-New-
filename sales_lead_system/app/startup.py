@@ -55,3 +55,4 @@ def ensure_default_admin(db: DatabaseConnection) -> None:
                     is_active=True,
                 )
             )
+        session.commit()
