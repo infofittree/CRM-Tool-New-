@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLead, useLeadFollowups } from "@/hooks/useLeads";
 import { useLeadHealth } from "@/hooks/useDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +45,7 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: lead, isLoading } = useLead(id || "");
   const { data: followups } = useLeadFollowups(id || "");
   const { data: health } = useLeadHealth(id || "");
@@ -647,7 +649,8 @@ export default function LeadDetail() {
                 try {
                   await api.put(`/leads/${id}`, editForm);
                   setShowEdit(false);
-                  window.location.reload();
+                  queryClient.invalidateQueries({ queryKey: ["lead", id] });
+                  queryClient.invalidateQueries({ queryKey: ["leads"] });
                 } catch {
                   // Error silently handled — save failure is rare
                 } finally {

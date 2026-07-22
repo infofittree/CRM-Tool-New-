@@ -35,8 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate("/login");
   }, [navigate]);
 
-  // Force re-login on every page refresh — do NOT restore from sessionStorage
+  // Restore session from sessionStorage on mount so page refresh keeps user logged in
   useEffect(() => {
+    const savedToken = sessionStorage.getItem("access_token");
+    const savedUser = sessionStorage.getItem("user");
+    if (savedToken && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("user");
+      }
+    }
     setLoading(false);
   }, []);
 
