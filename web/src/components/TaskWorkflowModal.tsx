@@ -105,6 +105,7 @@ export default function TaskWorkflowModal({ task, onClose }: TaskWorkflowModalPr
       setView("success");
       setTransitioning(false);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.refetchQueries({ queryKey: ["tasks"], type: "active" });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     }, 200);
   }, [queryClient]);

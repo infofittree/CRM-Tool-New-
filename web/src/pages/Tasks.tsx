@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTaskQueue } from "@/hooks/useDashboard";
@@ -9,7 +9,7 @@ import api, { type Task } from "@/lib/api";
 import TaskWorkflowModal from "@/components/TaskWorkflowModal";
 import { getTaskTypeConfig } from "@/lib/taskTypes";
 import {
-  Clock, AlertTriangle, Calendar, ArrowRight, CheckCircle2, Building2, Users, User,
+  Clock, AlertTriangle, Calendar, ArrowRight, CheckCircle2, Building2, Users, User, TrendingUp,
 } from "lucide-react";
 
 type TabKey = "all" | "calls" | "responses" | "procurement" | "meetings" | "quotations";
@@ -45,11 +45,44 @@ export default function Tasks() {
     enabled: !!user, staleTime: 60000, refetchOnWindowFocus: false,
   });
 
+  // ── Daily completion stats ──
+  const dailyStats = useMemo(() => {
+    const completed = data?.completed ?? [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const completedToday = completed.filter((t) => {
+      if (!t.completed_at) return false;
+      const d = new Date(t.completed_at);
+      return d.toDateString() === today.toDateString();
+    }).length;
+
+    // Last 7 days breakdown
+    const weekDays: { label: string; count: number; isToday: boolean }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = new Date(today);
+      day.setDate(day.getDate() - i);
+      const dayStr = day.toDateString();
+      const count = completed.filter((t) => {
+        if (!t.completed_at) return false;
+        return new Date(t.completed_at).toDateString() === dayStr;
+      }).length;
+      weekDays.push({
+        label: i === 0 ? "Today" : i === 1 ? "Yesterday" : day.toLocaleDateString("en", { weekday: "short" }),
+        count,
+        isToday: i === 0,
+      });
+    }
+
+    return { completedToday, weekDays, maxCount: Math.max(...weekDays.map((d) => d.count), 1) };
+  }, [data?.completed]);
+
   const summaryCards = [
     { label: "Due Today", value: data?.today_capped?.length ?? 0, icon: Clock, color: "text-amber-600", bg: "bg-amber-50/80", border: "border-amber-100" },
     { label: "Overdue", value: data?.overdue?.length ?? 0, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50/80", border: "border-red-100" },
     { label: "Upcoming", value: data?.upcoming?.length ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50/60", border: "border-teal-100" },
-    { label: "My Leads", value: leadsData ?? 0, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50/60", border: "border-emerald-100" },
+    { label: "Completed Today", value: dailyStats.completedToday, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50/60", border: "border-emerald-100" },
+    { label: "My Leads", value: leadsData ?? 0, icon: Building2, color: "text-blue-600", bg: "bg-blue-50/60", border: "border-blue-100" },
   ];
 
   const filterTasksByType = (tasks: any[]) => {
@@ -122,7 +155,7 @@ export default function Tasks() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {summaryCards.map((s) => (
           <div key={s.label} className={cn("rounded-2xl border p-5 transition-all duration-200 hover-lift", s.bg, s.border)}>
             <div className="flex items-center justify-between mb-3">
@@ -133,6 +166,26 @@ export default function Tasks() {
           </div>
         ))}
       </div>
+
+      {/* Weekly completion bar */}
+      {data?.completed && data.completed.length > 0 && (
+        <div className="rounded-2xl border border-border/50 bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span className="text-[13px] font-semibold text-foreground/80">Weekly Completions</span>
+            <span className="text-[11px] text-muted-foreground ml-auto">{data.completed.length} total this week</span>
+          </div>
+          <div className="flex items-end gap-2 h-16">
+            {dailyStats.weekDays.map((day) => (
+              <div key={day.label} className="flex-1 flex flex-col items-center gap-1">
+                <span className="text-[10px] font-medium text-muted-foreground/60 tabular-nums">{day.count}</span>
+                <div className="w-full rounded-t-md transition-all duration-300" style={{ height: `${day.count > 0 ? Math.max((day.count / dailyStats.maxCount) * 48, 8) : 2}px`, backgroundColor: day.isToday ? "hsl(152 55% 30%)" : day.count > 0 ? "hsl(152 55% 30% / 0.3)" : "hsl(0 0% 92%)" }} />
+                <span className={cn("text-[10px] font-medium", day.isToday ? "text-primary" : "text-muted-foreground/50")}>{day.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1.5 flex-wrap">
         {QUICK_FILTERS.map((f) => {

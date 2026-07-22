@@ -84,7 +84,9 @@ export function useTaskQueue(upcomingDays = 7, maxToday = 20, salespersonOverrid
     queryFn: () => api.get("/followups/tasks", {
       params: { upcoming_days: upcomingDays, max_today: maxToday, ...(s ? { salesperson: s } : {}) },
     }).then((r) => r.data),
-    ...STALE,
+    staleTime: 5_000,
+    gcTime: 120_000,
+    refetchOnWindowFocus: false,
   });
 
   return query;
